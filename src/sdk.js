@@ -1,51 +1,56 @@
-import { Bridge } from './bridge';
-import { IframeAdapter } from './adapter/iframe';
-import { MockAdapter } from './adapter/mock';
-import { REQUEST_TYPE } from './constants';
-
-const NOTIFY_EVENT_TYPE = {
-  APP_CHANGED: 'app_changed',
-};
+import UniversalAppAPI from './apis/universal-app-api';
+import { IframeAdapter, POST_MESSAGE_REQUEST_TYPE } from './iframe-adapter';
 
 export class HTMLPageSDK {
-  constructor(options) {
-    this.options = options;
-    this.isMock = options.isMock || window.parent === window.self;
-    this.adapter = this.isMock ? new MockAdapter(options) : new IframeAdapter(options);
-    this.bridge = new Bridge(this.adapter);
+  constructor(options = {}) {
+    this.options = options || {};
+    this.iframeAdapter = new IframeAdapter(options);
   }
 
-  getAppSettings() {
-    return this.bridge.request(REQUEST_TYPE.GET_APP_SETTINGS);
+  async init() {
+    if (!this.options.server) {
+      this.options.server = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_SERVER);
+    }
+    if (!this.options.accessToken) {
+      this.options.accessToken = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_ACCESS_TOKEN);
+    }
+    if (!this.options.appUuid) {
+      this.options.appUuid = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_APP_UUID);
+    }
+    if (!this.options.pageId) {
+      this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
+    }
+    const { server, accessToken, appUuid } = this.options;
+    this.universalAppAPI = new UniversalAppAPI({ server, accessToken, appUuid });
   }
 
-  async getAppSetting(key) {
-    const settings = await this.getAppSettings();
-    return settings?.[key];
+  listRows({ tableName, start, limit }) {
+    return this.universalAppAPI.listRows(this.options.pageId, tableName, start, limit);
   }
 
-  getAppConfig(key) {
-    return this.bridge.request(REQUEST_TYPE.GET_APP_CONFIG, { key });
+  addRow({ tableName, rowData, rowLinksData }) {
+    return this.universalAppAPI.addRow(this.options.pageId, tableName, rowData, rowLinksData);
   }
 
-  getTables() {
-    return this.bridge.request(REQUEST_TYPE.GET_TABLES);
+  updateRow({ tableName, rowId, rowData }) {
+    const rowsData = [{ id: rowId, row: rowData }];
+    this.batchUpdateRows({ tableName, rowsData });
   }
 
-  getRows(tableName, start, limit) {
-    return this.bridge.request(REQUEST_TYPE.GET_ROWS, { tableName, start, limit });
+  deleteRow({ tableName, rowId }) {
+    const rowsIds = [rowId];
+    return this.batchDeleteRows({ tableName, rowsIds });
   }
 
-  addRow(tableName, rowData, linkRows) {
-    return this.bridge.request(REQUEST_TYPE.ADD_ROW, { tableName, rowData, linkRows });
+  batchAddRows({ tableName, rowsData, rowsLinksData }) {
+    return this.universalAppAPI.addRows(this.options.pageId, tableName, rowsData, rowsLinksData);
   }
 
-  /**
-   * listen app data changed
-   * @param {function} callback(type: APP_CHANGED_EVENT_TYPE, updates)
-   * @returns
-   */
-  subscribeAppChanged(callback) {
-    return this.bridge.on(NOTIFY_EVENT_TYPE.APP_CHANGED, callback);
+  batchUpdateRows({ tableName, rowsData }) {
+    return this.universalAppAPI.updateRows(this.options.pageId, tableName, rowsData);
+  }
+
+  batchDeleteRows({ tableName, rowsIds }) {
+    return this.universalAppAPI.deleteRows(this.options.pageId, tableName, rowsIds);
   }
 }

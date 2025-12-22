@@ -1,10 +1,15 @@
-import { generatorBase64Code, hasOwnProperty } from '../utils';
-
 const POST_MESSAGE_TYPE = {
   HTML_PAGE_REQUEST: 'HTML_PAGE_REQUEST',
   HTML_PAGE_RESPONSE: 'HTML_PAGE_RESPONSE',
   HTML_PAGE_EVENT: 'HTML_PAGE_EVENT',
   WINDOW_EVENT: 'WINDOW_EVENT',
+};
+
+export const POST_MESSAGE_REQUEST_TYPE = {
+  GET_SERVER: 'get_server',
+  GET_ACCESS_TOKEN: 'get_access_token',
+  GET_APP_UUID: 'get_app_uuid',
+  GET_PAGE_ID: 'get_page_id',
 };
 
 const WINDOW_EVENT_SOURCE_TYPE = {
@@ -15,6 +20,19 @@ const SUPPORT_WINDOW_MOUSE_EVENT_TYPES = ['click', 'dblclick', 'mousemove', 'mou
 const SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES = ['keydown', 'keyup', 'keypress'];
 const SUPPORT_WINDOW_DRAG_EVENT_TYPES = ['dragstart', 'dragover', 'drag', 'dragend', 'dragenter', 'dragleave', 'drop'];
 const HIGH_FREQUENCY_WINDOW_EVENT_TYPES = ['mousemove', 'dragover'];
+
+const hasOwnProperty = (obj, key) => {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+};
+
+const generatorBase64Code = (keyLength = 4) => {
+  let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz0123456789';
+  let key = '';
+  for (let i = 0; i < keyLength; i++) {
+    key += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return key;
+};
 
 const createWindowEventData = ({ eventType, event }) => {
   if (SUPPORT_WINDOW_MOUSE_EVENT_TYPES.includes(eventType)) {
@@ -55,6 +73,7 @@ const createWindowEventData = ({ eventType, event }) => {
  */
 export class IframeAdapter {
   constructor(options = {}) {
+    this.selfWindow = window.parent === window.self;
     this.targetOrigin = options.targetOrigin || '*';
     this.pendingRequests = {};
     this.eventHandlers = {};
@@ -71,6 +90,7 @@ export class IframeAdapter {
   }
 
   setupMessageListener() {
+    if (this.selfWindow) return;
     window.addEventListener('message', this.handleMessage.bind(this));
     this.setEventsListener();
   }
@@ -124,6 +144,11 @@ export class IframeAdapter {
   }
 
   async request(method, params) {
+    if (this.selfWindow) {
+      return new Promise((resolve) => {
+        resolve(null);
+      });
+    }
     const requestId = this.generatorRequestId();
     return new Promise((resolve, reject) => {
       this.pendingRequests[requestId] = { resolve, reject };

@@ -9,7 +9,7 @@
 
 ## Introduction
 
-SeaTable HTML Page SDK is a JavaScript library designed for embedding HTML pages within SeaTable Universal Apps. It provides commonly used interfaces for data interaction and event subscription, supporting both iframe environments (production) and standalone development modes (mock).
+SeaTable HTML Page SDK is a JavaScript library designed for embedding HTML pages within SeaTable Universal Apps. It provides commonly used interfaces for data interaction and event subscription.
 
 ## Installation
 
@@ -33,28 +33,11 @@ For local development:
 
 ```js
 const sdk = new HTMLPageSDK({
-  isMock: true, // Force mock mode
   server: "https://your-seatable-server.com",
   accessToken: "your-access-token",
   appUuid: "your-app-uuid",
-  username: "your-username",
-  password: "your-password",
-  appConfig: {
-    /* your app config */
-  },
+  pageId: "your-app-page-id", // create an html page in universal app first
 });
-```
-
-In mock mode, you can access the underlying API clients:
-
-```js
-const mockAdapter = sdk.adapter;
-
-// Access Universal App API
-const metadata = await mockAdapter.universalAppAPI.getMetadata(appUuid);
-
-// Access DTable Web API
-await mockAdapter.dtableWebAPI.login();
 ```
 
 #### Production mode (iframe)
@@ -76,15 +59,17 @@ import { HTMLPageSDK } from "seatable-html-page-sdk";
 // Initialize SDK
 const sdk = new HTMLPageSDK(options);
 
-// Fetch data
-const rows = await sdk.getRows("TableName", 0, 100);
+// list rows
+const rows = await sdk.listRows({
+  tableName: "TableName",
+  start: 0,
+  limit: 100,
+});
 
 // Add a new row
-await sdk.addRow("TableName", { Name: "John", Age: 30 });
-
-// Subscribe to app changes
-const unsubscribe = sdk.subscribeAppChanged((eventType, updates) => {
-  console.log("App changed:", eventType, updates);
+await sdk.addRow({
+  tableName: "TableName",
+  rowData: { Name: "John", Age: 30 },
 });
 ```
 

@@ -10,6 +10,7 @@ class UniversalAppAPI {
 
   init() {
     if (this.accessToken && this.server) {
+      this.server = this.server.endsWith('/') ? this.server.slice(0, -1) : this.server;
       this.req = axios.create({
         baseURL: this.server,
         headers: {

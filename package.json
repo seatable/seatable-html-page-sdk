@@ -10,7 +10,7 @@
     "test-cov": "jest --coverage",
     "eslint": "eslint ./src/**",
     "eslint-fix": "eslint ./src/** --fix",
-    "build": "rm -rf dist lib es && rollup -c",
+    "build": "rm -rf dist lib es && NODE_ENV=production rollup -c",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

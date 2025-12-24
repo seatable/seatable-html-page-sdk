@@ -10,7 +10,7 @@ class UniversalAppAPI {
 
   init() {
     if (this.accessToken && this.server) {
-      this.server = this.server.endsWith('/') ? this.server.slice(0, -1) : this.server;
+      this.server = this.server.endsWith('/') ? this.server : `${this.server}/`;
       this.req = axios.create({
         baseURL: this.server,
         headers: {
@@ -21,25 +21,25 @@ class UniversalAppAPI {
   }
 
   listRows(page_id, table_name, start, limit) {
-    const url = `${this.server}/api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const params = { page_id, table_name, start, limit };
     return this.req.get(url, { params });
   }
 
   addRow(page_id, table_name, row_data, row_links_data) {
-    const url = `${this.server}/api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, row_data, row_links_data };
     return this.req.post(url, data);
   }
 
   updateRows(page_id, table_name, rows_data) {
-    const url = `${this.server}/api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_data };
     return this.req.put(url, data);
   }
 
   deleteRows(page_id, table_name, rows_ids) {
-    const url = `${this.server}/api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_ids };
     return this.req.delete(url, data);
   }

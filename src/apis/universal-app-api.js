@@ -32,6 +32,12 @@ class UniversalAppAPI {
     return this.req.post(url, data);
   }
 
+  addRows(page_id, table_name, rows_data, rows_links_data) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/batch/`;
+    const data = { page_id, table_name, rows_data, rows_links_data };
+    return this.req.post(url, data);
+  }
+
   updateRows(page_id, table_name, rows_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_data };

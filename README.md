@@ -38,6 +38,7 @@ const sdk = new HTMLPageSDK({
   appUuid: "your-app-uuid",
   pageId: "your-app-page-id", // create an html page in universal app first
 });
+await sdk.init({});
 ```
 
 #### Production mode (iframe)
@@ -49,6 +50,7 @@ const sdk = new HTMLPageSDK({
   targetOrigin: "https://your-seatable-server.com", // Optional, defaults to '*'
   timeout: 10000, // Optional, request timeout in ms, defaults to 10000
 });
+await sdk.init({});
 ```
 
 ### Basic usage
@@ -58,6 +60,7 @@ import { HTMLPageSDK } from "seatable-html-page-sdk";
 
 // Initialize SDK
 const sdk = new HTMLPageSDK(options);
+await sdk.init();
 
 // list rows
 const rows = await sdk.listRows({

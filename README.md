@@ -3,7 +3,8 @@
 <div>
 
 [![npm package](https://img.shields.io/npm/v/seatable-html-page-sdk/latest.svg)](https://www.npmjs.org/package/seatable-html-page-sdk)
-[![JS size](https://img.badgesize.io/https://unpkg.com/seatable-html-page-sdk@latest/dist/index.js?label=index.js)](https://unpkg.com/seatable-html-page-sdk@latest/dist/index.js)
+[![minified size](https://img.shields.io/bundlephobia/min/seatable-html-page-sdk/latest)](https://unpkg.com/seatable-html-page-sdk@latest/dist/index.js)
+[![npm downloads](https://img.shields.io/npm/dm/seatable-html-page-sdk.svg?style=flat-square)](https://npm-stat.com/charts.html?package=seatable-html-page-sdk)
 
 </div>
 

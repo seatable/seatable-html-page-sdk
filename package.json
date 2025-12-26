@@ -13,6 +13,13 @@
     "build": "rm -rf dist lib es && NODE_ENV=production rollup -c",
     "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seatable/seatable-html-page-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/seatable/seatable-html-page-sdk/issues"
+  },
   "keywords": [
     "HTML page"
   ],

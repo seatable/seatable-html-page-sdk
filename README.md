@@ -14,6 +14,8 @@ SeaTable HTML Page SDK is a JavaScript library designed for embedding HTML pages
 
 ## Installation
 
+### Package manager
+
 Install with npm or yarn:
 
 ```bash
@@ -22,6 +24,17 @@ $ npm install seatable-html-page-sdk --save
 
 # yarn
 $ yarn add seatable-html-page-sdk
+```
+
+### CDN
+
+Using unpkg CDN:
+
+```html
+<script src="https://unpkg.com/seatable-html-page-sdk@1.0.0/dist/index.js"></script>
+<script>
+  const sdk = new HTMLPageSDK();
+</script>
 ```
 
 ## Usage

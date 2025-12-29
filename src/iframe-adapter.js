@@ -72,12 +72,13 @@ const createWindowEventData = ({ eventType, event }) => {
  * For HTML page running inside an iframe
  */
 export class IframeAdapter {
-  constructor(options = {}) {
+  constructor(options) {
+    this.options = options || {};
     this.selfWindow = window.parent === window.self;
-    this.targetOrigin = options.targetOrigin || '*';
+    this.targetOrigin = this.options.targetOrigin || '*';
     this.pendingRequests = {};
     this.eventHandlers = {};
-    this.timeout = options.timeout || 10000;
+    this.timeout = this.options.timeout || 10000;
     this.setupMessageListener();
   }
 

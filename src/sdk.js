@@ -2,12 +2,15 @@ import UniversalAppAPI from './apis/universal-app-api';
 import { IframeAdapter, POST_MESSAGE_REQUEST_TYPE } from './iframe-adapter';
 
 export class HTMLPageSDK {
-  constructor(options = {}) {
+  constructor(options) {
     this.options = options || {};
     this.iframeAdapter = new IframeAdapter(options);
   }
 
   async init() {
+    if (!this.options) {
+      this.options = {};
+    }
     if (!this.options.server) {
       this.options.server = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_SERVER);
     }

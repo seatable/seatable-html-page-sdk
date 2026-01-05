@@ -8,19 +8,34 @@ import terser from '@rollup/plugin-terser';
 export default defineConfig([
   {
     input: './src/index.umd.js',
-    output: {
-      format: 'umd',
-      file: './dist/index.js',
-      name: 'HTMLPageSDK',
-      exports: 'default',
-      plugins: [terser()],
-    },
+    output: [
+      {
+        format: 'umd',
+        file: './dist/index.js',
+        name: 'HTMLPageSDK',
+        exports: 'default',
+        sourcemap: true,
+      },
+      {
+        format: 'umd',
+        file: './dist/index.min.js',
+        name: 'HTMLPageSDK',
+        exports: 'default',
+        sourcemap: true,
+        plugins: [terser()],
+      }
+    ],
     plugins: [
       resolve({ browser: true }),
       babel({
         exclude: 'node_modules/**',
-        babelHelpers: 'runtime',
-        presets: ['@babel/preset-env']
+        babelHelpers: 'bundled',
+        presets: [
+          ['@babel/preset-env', {
+            targets: '> 0.25%, not dead',
+            modules: false,
+          }]
+        ]
       }),
       json(),
       commonjs(),
@@ -37,6 +52,7 @@ export default defineConfig([
         exports: 'named',
         preserveModules: true,
         preserveModulesRoot: 'src',
+        sourcemap: true,
       },
       {
         dir: './es',
@@ -44,19 +60,26 @@ export default defineConfig([
         exports: 'named',
         preserveModules: true,
         preserveModulesRoot: 'src',
+        sourcemap: true,
       },
     ],
     external: [
-      /@babel\/runtime/,
       /axios/,
+      /node_modules/,
     ],
     plugins: [
-      resolve(),   // resolve third-party modules
+      resolve(), // resolve third-party modules
       babel({
         exclude: 'node_modules/**',
-        babelHelpers: 'runtime',
+        babelHelpers: 'bundled',
+        presets: [
+          ['@babel/preset-env', {
+            targets: '> 0.25%, not dead',
+            modules: false,
+          }]
+        ],
       }),
-      json(),      // support JSON files
+      json(), // support JSON files
       commonjs(),
     ],
   }

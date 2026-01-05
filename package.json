@@ -1,9 +1,19 @@
 {
   "name": "seatable-html-page-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "JavaScript SDK for embedding HTML pages within SeaTable Universal Apps.",
   "main": "./lib/index.js",
   "module": "./es/index.js",
+  "browser": "./dist/index.js",
+  "unpkg": "./dist/index.min.js",
+  "jsdelivr": "./dist/index.min.js",
+  "exports": {
+    ".": {
+      "import": "./es/index.js",
+      "require": "./lib/index.js",
+      "browser": "./dist/index.js"
+    }
+  },
   "private": false,
   "scripts": {
     "test": "jest --watchAll",
@@ -28,17 +38,14 @@
   "files": [
     "dist",
     "lib",
-    "es",
-    "package.json"
+    "es"
   ],
   "dependencies": {
     "axios": "~1.12.*"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
-    "@babel/plugin-transform-runtime": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
-    "@babel/runtime": "^7.26.0",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-eslint": "^9.0.5",

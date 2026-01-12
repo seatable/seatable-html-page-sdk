@@ -48,7 +48,7 @@ For local development:
 ```js
 const sdk = new HTMLPageSDK({
   server: "https://your-seatable-server.com",
-  accessToken: "your-access-token",
+  accountToken: "your-account-token",
   appUuid: "your-app-uuid",
   pageId: "your-app-page-id", // create an html page in universal app first
 });

@@ -1,23 +1,43 @@
 import axios from 'axios';
 
-class UniversalAppAPI {
-  constructor({ server, accessToken, appUuid }) {
-    this.server = server;
-    this.accessToken = accessToken;
+class HTMLPageAPI {
+  async initWithAccountToken({ server, accountToken, appUuid }) {
+    this.initServer(server);
     this.appUuid = appUuid;
-    this.init();
+    if (this.server && this.appUuid) {
+      try {
+        const res = await axios.get(`${this.server}api/v2.1/universal-apps/${this.appUuid}/access-token/`, {
+          headers: { Authorization: 'Token ' + accountToken }
+        });
+        this.accessToken = res.data?.access_token || '';
+        this.createReq();
+      } catch (error) {
+        console.log('Authorization failed');
+      }
+    }
   }
 
-  init() {
-    if (this.accessToken && this.server) {
-      this.server = this.server.endsWith('/') ? this.server : `${this.server}/`;
-      this.req = axios.create({
-        baseURL: this.server,
-        headers: {
-          Authorization: 'Token ' + this.accessToken,
-        },
-      });
+  init({ server, accessToken, appUuid }) {
+    this.initServer(server);
+    this.accessToken = accessToken || '';
+    this.appUuid = appUuid;
+    if (this.accessToken && this.server && this.appUuid) {
+      this.createReq();
     }
+  }
+
+  initServer(server) {
+    if (!server) return;
+    this.server = server.endsWith('/') ? server : `${server}/`;
+  }
+
+  createReq() {
+    this.req = axios.create({
+      baseURL: this.server,
+      headers: {
+        Authorization: 'Token ' + this.accessToken,
+      },
+    });
   }
 
   listRows(page_id, table_name, start, limit) {
@@ -51,4 +71,4 @@ class UniversalAppAPI {
   }
 }
 
-export default UniversalAppAPI;
+export default HTMLPageAPI;

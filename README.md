@@ -47,7 +47,7 @@ For local development:
 
 ```js
 const sdk = new HTMLPageSDK({
-  server: "https://your-html-page-server.com",
+  server: "your-html-page-server",
   accountToken: "your-account-token",
   appUuid: "your-app-uuid",
   pageId: "your-app-page-id", // create an html page in universal app first
@@ -60,10 +60,7 @@ await sdk.init({});
 When running inside a SeaTable Universal App:
 
 ```js
-const sdk = new HTMLPageSDK({
-  targetOrigin: "https://your-seatable-server.com", // Optional, defaults to '*'
-  timeout: 10000, // Optional, request timeout in ms, defaults to 10000
-});
+const sdk = new HTMLPageSDK();
 await sdk.init({});
 ```
 

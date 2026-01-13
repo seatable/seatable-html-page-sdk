@@ -20,10 +20,10 @@ Install with npm or yarn:
 
 ```bash
 # npm
-$ npm install seatable-html-page-sdk --save
+npm install seatable-html-page-sdk --save
 
 # yarn
-$ yarn add seatable-html-page-sdk
+yarn add seatable-html-page-sdk
 ```
 
 ### CDN
@@ -52,7 +52,7 @@ const sdk = new HTMLPageSDK({
   appUuid: "your-app-uuid",
   pageId: "your-app-page-id", // create an html page in universal app first
 });
-await sdk.init({});
+await sdk.init();
 ```
 
 #### Production mode (iframe)
@@ -61,7 +61,7 @@ When running inside a SeaTable Universal App:
 
 ```js
 const sdk = new HTMLPageSDK();
-await sdk.init({});
+await sdk.init();
 ```
 
 ### Basic usage

@@ -31,7 +31,7 @@ yarn add seatable-html-page-sdk
 Using unpkg CDN:
 
 ```html
-<script src="https://unpkg.com/seatable-html-page-sdk@1.0.0/dist/index.min.js"></script>
+<script src="https://unpkg.com/seatable-html-page-sdk@latest/dist/index.min.js"></script>
 <script>
   const sdk = new HTMLPageSDK();
 </script>

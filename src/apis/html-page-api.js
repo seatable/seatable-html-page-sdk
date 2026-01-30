@@ -61,13 +61,13 @@ class HTMLPageAPI {
   updateRows(page_id, table_name, rows_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_data };
-    return this.req.put(url, data);
+    return this.req.put(url, data, { headers: { 'Content-Type': 'application/json' } });
   }
 
   deleteRows(page_id, table_name, rows_ids) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_ids };
-    return this.req.delete(url, data);
+    return this.req.delete(url, data, { headers: { 'Content-Type': 'application/json' } });
   }
 }
 

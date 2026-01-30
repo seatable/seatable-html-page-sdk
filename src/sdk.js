@@ -43,7 +43,7 @@ export class HTMLPageSDK {
   }
 
   updateRow({ tableName, rowId, rowData }) {
-    const rowsData = [{ id: rowId, row: rowData }];
+    const rowsData = [{ row_id: rowId, row: rowData }];
     this.batchUpdateRows({ tableName, rowsData });
   }
 

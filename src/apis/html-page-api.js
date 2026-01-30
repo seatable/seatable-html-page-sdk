@@ -72,7 +72,7 @@ class HTMLPageAPI {
   updateRows(page_id, table_name, rows_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_data };
-    return this.req._sendPut(url, data);
+    return this._sendPut(url, data);
   }
 
   deleteRows(page_id, table_name, rows_ids) {

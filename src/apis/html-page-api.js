@@ -48,10 +48,7 @@ class HTMLPageAPI {
   }
 
   _sendPut(url, data) {
-    return this.req.put(url, {
-      headers: { 'Content-Type': 'application/json' },
-      data,
-    });
+    return this.req.put(url, data, { headers: { 'Content-Type': 'application/json' } });
   }
 
   listRows(page_id, table_name, start, limit) {

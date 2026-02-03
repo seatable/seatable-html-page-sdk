@@ -57,15 +57,15 @@ class HTMLPageAPI {
     return this.req.get(url, { params });
   }
 
-  addRow(page_id, table_name, row_data, row_links_data) {
+  addRow(page_id, table_name, row_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
-    const data = { page_id, table_name, row_data, row_links_data };
+    const data = { page_id, table_name, row_data };
     return this.req.post(url, data);
   }
 
-  addRows(page_id, table_name, rows_data, rows_links_data) {
+  addRows(page_id, table_name, rows_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/batch/`;
-    const data = { page_id, table_name, rows_data, rows_links_data };
+    const data = { page_id, table_name, rows_data };
     return this.req.post(url, data);
   }
 

@@ -38,8 +38,8 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
   }
 
-  addRow({ tableName, rowData, rowLinksData }) {
-    return this.htmlPageAPI.addRow(this.options.pageId, tableName, rowData, rowLinksData);
+  addRow({ tableName, rowData }) {
+    return this.htmlPageAPI.addRow(this.options.pageId, tableName, rowData);
   }
 
   updateRow({ tableName, rowId, rowData }) {
@@ -52,8 +52,8 @@ export class HTMLPageSDK {
     return this.batchDeleteRows({ tableName, rowsIds });
   }
 
-  batchAddRows({ tableName, rowsData, rowsLinksData }) {
-    return this.htmlPageAPI.addRows(this.options.pageId, tableName, rowsData, rowsLinksData);
+  batchAddRows({ tableName, rowsData }) {
+    return this.htmlPageAPI.addRows(this.options.pageId, tableName, rowsData);
   }
 
   batchUpdateRows({ tableName, rowsData }) {

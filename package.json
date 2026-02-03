@@ -1,6 +1,6 @@
 {
   "name": "seatable-html-page-sdk",
-  "version": "0.0.8",
+  "version": "0.0.9-beta.1",
   "description": "JavaScript SDK for embedding HTML pages within SeaTable Universal Apps.",
   "main": "./lib/index.js",
   "module": "./es/index.js",
@@ -11,7 +11,8 @@
     ".": {
       "import": "./es/index.js",
       "require": "./lib/index.js",
-      "browser": "./dist/index.js"
+      "browser": "./dist/index.js",
+      "default": "./es/index.js"
     }
   },
   "private": false,

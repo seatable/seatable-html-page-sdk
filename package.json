@@ -42,7 +42,7 @@
     "es"
   ],
   "dependencies": {
-    "axios": "~1.12.*"
+    "axios": "~1.13.*"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

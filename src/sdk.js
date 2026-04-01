@@ -63,4 +63,30 @@ export class HTMLPageSDK {
   batchDeleteRows({ tableName, rowsIds }) {
     return this.htmlPageAPI.deleteRows(this.options.pageId, tableName, rowsIds);
   }
+
+  async uploadFile({ file, uploadType = 'file' }) {
+    const res = await this.htmlPageAPI.getUploadLink(this.options.pageId, uploadType);
+    const { upload_link, parent_path, img_relative_path, file_relative_path, asset_parent_url } = res.data;
+    const relativePath = uploadType === 'image' ? img_relative_path : file_relative_path;
+    const formData = new FormData();
+    formData.append('parent_dir', parent_path);
+    formData.append('relative_path', relativePath);
+    formData.append('file', file, file.name);
+    const uploadRes = await this.htmlPageAPI.uploadAsset(upload_link, formData);
+    const uploadedFile = uploadRes.data[0];
+    const url = `${asset_parent_url}/${relativePath}/${encodeURIComponent(uploadedFile.name)}`;
+    if (uploadType === 'image') {
+      return url;
+    }
+    return {
+      name: uploadedFile.name,
+      size: uploadedFile.size,
+      type: 'file',
+      url,
+    };
+  }
+
+  uploadImage({ file }) {
+    return this.uploadFile({ file, uploadType: 'image' });
+  }
 }

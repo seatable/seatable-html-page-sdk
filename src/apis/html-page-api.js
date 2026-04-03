@@ -86,12 +86,48 @@ class HTMLPageAPI {
     return this.req.get(url, { params: { page_id, upload_type } });
   }
 
-  uploadAsset(upload_link, formData) {
+  uploadAsset(upload_link, form_data) {
     return axios.create()({
       method: 'post',
       url: `${upload_link}?ret-json=1`,
-      data: formData,
+      data: form_data,
     });
+  }
+
+  async upload(pageId, file, upload_type = 'file') {
+    let uploadLinkRes = null;
+    try {
+      uploadLinkRes = await this.getUploadLink(pageId, upload_type);
+    } catch (error) {
+      throw new Error(`Failed to get upload link: ${error.message}`);
+    }
+    if (!uploadLinkRes || !uploadLinkRes.data) {
+      throw new Error('Failed to get upload link: empty response');
+    }
+    const { upload_link, parent_path, img_relative_path, file_relative_path, asset_parent_url } = uploadLinkRes.data;
+    const relativePath = upload_type === 'image' ? img_relative_path : file_relative_path;
+    const formData = new FormData();
+    formData.append('parent_dir', parent_path);
+    formData.append('relative_path', relativePath);
+    formData.append('file', file, file.name);
+
+    let uploadRes = null;
+    try {
+      uploadRes = await this.uploadAsset(upload_link, formData);
+    } catch (error) {
+      throw new Error(`Failed to get upload link: ${error.message}`);
+    }
+    const uploadedFile = uploadRes?.data?.[0];
+    if (!uploadedFile) {
+      throw new Error('Failed to upload file: empty response');
+    }
+    const url = `${asset_parent_url}/${relativePath}/${encodeURIComponent(uploadedFile.name)}`;
+    return {
+      name: uploadedFile.name,
+      size: uploadedFile.size,
+      type: upload_type,
+      url,
+    };
   }
 }
 

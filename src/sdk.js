@@ -63,4 +63,48 @@ export class HTMLPageSDK {
   batchDeleteRows({ tableName, rowsIds }) {
     return this.htmlPageAPI.deleteRows(this.options.pageId, tableName, rowsIds);
   }
+
+  async _upload({ file, uploadType = 'file' }) {
+    let uploadLinkRes = null;
+    try {
+      uploadLinkRes = await this.htmlPageAPI.getUploadLink(this.options.pageId, uploadType);
+    } catch (error) {
+      throw new Error(`Failed to get upload link: ${error.message}`);
+    }
+    if (!uploadLinkRes || !uploadLinkRes.data) {
+      throw new Error('Failed to get upload link: empty response');
+    }
+    const { upload_link, parent_path, img_relative_path, file_relative_path, asset_parent_url } = uploadLinkRes.data;
+    const relativePath = uploadType === 'image' ? img_relative_path : file_relative_path;
+    const formData = new FormData();
+    formData.append('parent_dir', parent_path);
+    formData.append('relative_path', relativePath);
+    formData.append('file', file, file.name);
+
+    let uploadRes = null;
+    try {
+      uploadRes = await this.htmlPageAPI.uploadAsset(upload_link, formData);
+    } catch (error) {
+      throw new Error(`Failed to get upload link: ${error.message}`);
+    }
+    const uploadedFile = uploadRes?.data?.[0];
+    if (!uploadedFile) {
+      throw new Error('Failed to upload file: empty response');
+    }
+    const url = `${asset_parent_url}/${relativePath}/${encodeURIComponent(uploadedFile.name)}`;
+    return {
+      name: uploadedFile.name,
+      size: uploadedFile.size,
+      type: uploadType,
+      url,
+    };
+  }
+
+  uploadFile({ file }) {
+    return this._upload({ file });
+  }
+
+  uploadImage({ file }) {
+    return this._upload({ file, uploadType: 'image' });
+  }
 }

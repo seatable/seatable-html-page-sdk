@@ -80,6 +80,19 @@ class HTMLPageAPI {
     const data = { page_id, table_name, rows_ids };
     return this._sendDelete(url, data);
   }
+
+  getUploadLink(page_id, upload_type = 'file') {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-upload-link/`;
+    return this.req.get(url, { params: { page_id, upload_type } });
+  }
+
+  uploadAsset(upload_link, formData) {
+    return axios.create()({
+      method: 'post',
+      url: `${upload_link}?ret-json=1`,
+      data: formData,
+    });
+  }
 }
 
 export default HTMLPageAPI;

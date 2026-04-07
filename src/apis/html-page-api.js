@@ -69,8 +69,14 @@ class HTMLPageAPI {
     return this.req.post(url, data);
   }
 
-  updateRows(page_id, table_name, rows_data) {
+  updateRow(page_id, table_name, row_id, row_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
+    const data = { page_id, table_name, row_id, row_data };
+    return this._sendPut(url, data);
+  }
+
+  updateRows(page_id, table_name, rows_data) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/batch/`;
     const data = { page_id, table_name, rows_data };
     return this._sendPut(url, data);
   }

@@ -43,8 +43,7 @@ export class HTMLPageSDK {
   }
 
   updateRow({ tableName, rowId, rowData }) {
-    const rowsData = [{ row_id: rowId, row: rowData }];
-    this.batchUpdateRows({ tableName, rowsData });
+    return this.htmlPageAPI.updateRow(this.options.pageId, tableName, rowId, rowData);
   }
 
   deleteRow({ tableName, rowId }) {

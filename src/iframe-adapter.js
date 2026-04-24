@@ -20,6 +20,7 @@ const SUPPORT_WINDOW_MOUSE_EVENT_TYPES = ['click', 'dblclick', 'mousemove', 'mou
 const SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES = ['keydown', 'keyup', 'keypress'];
 const SUPPORT_WINDOW_DRAG_EVENT_TYPES = ['dragstart', 'dragover', 'drag', 'dragend', 'dragenter', 'dragleave', 'drop'];
 const HIGH_FREQUENCY_WINDOW_EVENT_TYPES = ['mousemove', 'dragover'];
+const INTERACTIVE_TAGS = ['SELECT', 'INPUT', 'TEXTAREA', 'BUTTON'];
 
 const hasOwnProperty = (obj, key) => {
   return Object.prototype.hasOwnProperty.call(obj, key);
@@ -119,6 +120,12 @@ export class IframeAdapter {
     ].forEach(eventType => {
       window.addEventListener(eventType, (event) => {
         if (event.source === WINDOW_EVENT_SOURCE_TYPE.APP) return;
+        const target = event.target;
+        if (target && INTERACTIVE_TAGS.includes(target.tagName)) return;
+        if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventType)) {
+          const active = document.activeElement;
+          if (active && INTERACTIVE_TAGS.includes(active.tagName)) return;
+        }
         if (HIGH_FREQUENCY_WINDOW_EVENT_TYPES.includes(eventType)) {
           // High-frequency events that need throttling (use RAF to limit to 60fps)
           // Use requestAnimationFrame for throttling high-frequency events

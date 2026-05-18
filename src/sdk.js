@@ -21,6 +21,15 @@ export class HTMLPageSDK {
     if (!this.options.pageId) {
       this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
     }
+    // Pull preview-mode view configs (only meaningful for the ai_agent preview page).
+    // For real pages the server resolves views from app_config; the inline map is ignored server-side.
+    if (!this.options.views) {
+      try {
+        this.options.views = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_VIEWS);
+      } catch (e) {
+        this.options.views = null;
+      }
+    }
     if (this.options.accountToken) {
       // dev: try to get access-token via accountToken
       const { server, accountToken, appUuid } = this.options;
@@ -34,8 +43,13 @@ export class HTMLPageSDK {
     }
   }
 
-  listRows({ tableName, start, limit }) {
-    return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
+  listRows({ tableName, viewName, start, limit }) {
+    let viewConfig = null;
+    if (viewName && this.options.views && typeof this.options.views === 'object') {
+      const cfg = this.options.views[viewName];
+      if (cfg && typeof cfg === 'object') viewConfig = cfg;
+    }
+    return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit, viewName, viewConfig);
   }
 
   addRow({ tableName, rowData }) {

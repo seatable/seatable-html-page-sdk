@@ -57,15 +57,14 @@ class HTMLPageAPI {
     return this.req.get(url, { params });
   }
 
-  listCollaborators(page_id, table_name) {
+  listCollaborators() {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-collaborators/`;
-    const params = { page_id, table_name };
-    return this.req.get(url, { params });
+    return this.req.get(url);
   }
 
-  resolveUsers(page_id, table_name, user_ids) {
+  resolveUsers(user_ids) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-users/resolve/`;
-    const data = { page_id, table_name, user_ids };
+    const data = { user_ids };
     return this.req.post(url, data);
   }
 

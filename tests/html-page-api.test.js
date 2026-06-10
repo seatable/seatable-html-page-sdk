@@ -102,7 +102,7 @@ describe('HTMLPageAPI.listCollaborators', () => {
     jest.clearAllMocks();
   });
 
-  it('lists collaborators with the current page id and table name', () => {
+  it('lists collaborators', () => {
     const { api, get } = createApi();
     const response = {
       data: {
@@ -111,17 +111,11 @@ describe('HTMLPageAPI.listCollaborators', () => {
     };
     get.mockReturnValue(response);
 
-    const result = api.listCollaborators('page-1', 'TableName');
+    const result = api.listCollaborators();
 
     expect(result).toEqual(response);
     expect(get).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-collaborators/',
-      {
-        params: {
-          page_id: 'page-1',
-          table_name: 'TableName',
-        },
-      },
     );
   });
 
@@ -132,7 +126,7 @@ describe('HTMLPageAPI.resolveUsers', () => {
     jest.clearAllMocks();
   });
 
-  it('resolves users with the current page id and table name', () => {
+  it('resolves users', () => {
     const { api, post } = createApi();
     const response = {
       data: {
@@ -141,14 +135,12 @@ describe('HTMLPageAPI.resolveUsers', () => {
     };
     post.mockReturnValue(response);
 
-    const result = api.resolveUsers('page-1', 'TableName', ['user@example.com']);
+    const result = api.resolveUsers(['user@example.com']);
 
     expect(result).toEqual(response);
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-users/resolve/',
       {
-        page_id: 'page-1',
-        table_name: 'TableName',
         user_ids: ['user@example.com'],
       },
     );

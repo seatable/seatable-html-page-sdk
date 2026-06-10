@@ -38,12 +38,12 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
   }
 
-  listCollaborators({ tableName } = {}) {
-    return this.htmlPageAPI.listCollaborators(this.options.pageId, tableName);
+  listCollaborators() {
+    return this.htmlPageAPI.listCollaborators();
   }
 
-  resolveUsers({ tableName, userIds } = {}) {
-    return this.htmlPageAPI.resolveUsers(this.options.pageId, tableName, userIds);
+  resolveUsers({ userIds } = {}) {
+    return this.htmlPageAPI.resolveUsers(userIds);
   }
 
   addRow({ tableName, rowData }) {

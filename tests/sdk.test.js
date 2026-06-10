@@ -65,10 +65,10 @@ describe('rows', () => {
     const response = { data: { collaborator_list: [{ email: 'user@example.com', name: 'User' }] } };
     mockListCollaborators.mockReturnValue(response);
 
-    const result = sdk.listCollaborators({ tableName: 'TableName' });
+    const result = sdk.listCollaborators();
 
     expect(result).toBe(response);
-    expect(mockListCollaborators).toHaveBeenCalledWith('page-1', 'TableName');
+    expect(mockListCollaborators).toHaveBeenCalledWith();
   });
 
   it('resolve users', () => {
@@ -78,10 +78,10 @@ describe('rows', () => {
     const response = { data: { user_list: [{ email: 'user@example.com', name: 'User' }] } };
     mockResolveUsers.mockReturnValue(response);
 
-    const result = sdk.resolveUsers({ tableName: 'TableName', userIds: ['user@example.com'] });
+    const result = sdk.resolveUsers({ userIds: ['user@example.com'] });
 
     expect(result).toBe(response);
-    expect(mockResolveUsers).toHaveBeenCalledWith('page-1', 'TableName', ['user@example.com']);
+    expect(mockResolveUsers).toHaveBeenCalledWith(['user@example.com']);
   });
 
   it('add/batchAdd/update/batchUpdate/delete/batchDelete rows', () => {

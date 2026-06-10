@@ -1,6 +1,8 @@
 import { HTMLPageSDK } from '../src/sdk';
 
 const mockListRows = jest.fn();
+const mockListCollaborators = jest.fn();
+const mockResolveUsers = jest.fn();
 const mockAddRow = jest.fn();
 const mockUpdateRow = jest.fn();
 const mockDeleteRows = jest.fn();
@@ -23,6 +25,8 @@ jest.mock('../src/iframe-adapter', () => ({
 jest.mock('../src/apis/html-page-api', () => {
   return jest.fn().mockImplementation(() => ({
     listRows: mockListRows,
+    listCollaborators: mockListCollaborators,
+    resolveUsers: mockResolveUsers,
     addRow: mockAddRow,
     updateRow: mockUpdateRow,
     deleteRows: mockDeleteRows,
@@ -52,6 +56,32 @@ describe('rows', () => {
 
     expect(result).toBe(response);
     expect(mockListRows).toHaveBeenCalledWith('page-1', 'TableName', 0, 100);
+  });
+
+  it('list collaborators', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = { listCollaborators: mockListCollaborators };
+
+    const response = { data: { collaborator_list: [{ email: 'user@example.com', name: 'User' }] } };
+    mockListCollaborators.mockReturnValue(response);
+
+    const result = sdk.listCollaborators({ tableName: 'TableName' });
+
+    expect(result).toBe(response);
+    expect(mockListCollaborators).toHaveBeenCalledWith('page-1', 'TableName');
+  });
+
+  it('resolve users', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = { resolveUsers: mockResolveUsers };
+
+    const response = { data: { user_list: [{ email: 'user@example.com', name: 'User' }] } };
+    mockResolveUsers.mockReturnValue(response);
+
+    const result = sdk.resolveUsers({ tableName: 'TableName', userIds: ['user@example.com'] });
+
+    expect(result).toBe(response);
+    expect(mockResolveUsers).toHaveBeenCalledWith('page-1', 'TableName', ['user@example.com']);
   });
 
   it('add/batchAdd/update/batchUpdate/delete/batchDelete rows', () => {

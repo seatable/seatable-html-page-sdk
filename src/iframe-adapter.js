@@ -1,9 +1,5 @@
-const POST_MESSAGE_TYPE = {
-  HTML_PAGE_REQUEST: 'HTML_PAGE_REQUEST',
-  HTML_PAGE_RESPONSE: 'HTML_PAGE_RESPONSE',
-  HTML_PAGE_EVENT: 'HTML_PAGE_EVENT',
-  WINDOW_EVENT: 'WINDOW_EVENT',
-};
+import { CommentModeAdapter } from './comment-mode';
+import { POST_MESSAGE_TYPE } from './constants';
 
 export const POST_MESSAGE_REQUEST_TYPE = {
   GET_SERVER: 'get_server',
@@ -80,6 +76,8 @@ export class IframeAdapter {
     this.pendingRequests = {};
     this.eventHandlers = {};
     this.timeout = this.options.timeout || 10000;
+    this.isCommentMode = false;
+    this.commentModeAdapter = new CommentModeAdapter();
     this.setupMessageListener();
   }
 
@@ -111,44 +109,59 @@ export class IframeAdapter {
   }
 
   setEventsListener() {
-    let rafId = null;
-    let pendingEvent = null;
-    [
+    this._windowEventHandler = this._windowEventHandler.bind(this);
+    this.interactiveEventTypes = [
       ...SUPPORT_WINDOW_MOUSE_EVENT_TYPES,
       ...SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES,
       ...SUPPORT_WINDOW_DRAG_EVENT_TYPES,
-    ].forEach(eventType => {
-      window.addEventListener(eventType, (event) => {
-        if (event.source === WINDOW_EVENT_SOURCE_TYPE.APP) return;
-        const target = event.target;
-        if (target && INTERACTIVE_TAGS.includes(target.tagName)) return;
-        if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventType)) {
-          const active = document.activeElement;
-          if (active && INTERACTIVE_TAGS.includes(active.tagName)) return;
-        }
-        if (HIGH_FREQUENCY_WINDOW_EVENT_TYPES.includes(eventType)) {
-          // High-frequency events that need throttling (use RAF to limit to 60fps)
-          // Use requestAnimationFrame for throttling high-frequency events
-          // Store the latest event with necessary data
-          pendingEvent = createWindowEventData({ eventType, event });
+    ];
+    this.rafId = null;
+    this.pendingEvent = null;
 
-          // Only schedule a new frame if one isn't already scheduled
-          if (rafId === null) {
-            rafId = requestAnimationFrame(() => {
-              if (pendingEvent) {
-                this.postWindowEvent(pendingEvent);
-                pendingEvent = null;
-                rafId = null;
-              }
-            });
-          }
-          return;
-        }
+    this.bindInteractiveEvents();
+  }
 
-        // Low-frequency events
-        this.postWindowEvent(createWindowEventData({ eventType, event }));
-      }, true);
+  bindInteractiveEvents() {
+    this.interactiveEventTypes.forEach(eventType => {
+      window.addEventListener(eventType, this._windowEventHandler, true);
     });
+  }
+
+  unbindInteractiveEvents() {
+    this.interactiveEventTypes.forEach(eventType => {
+      window.removeEventListener(eventType, this._windowEventHandler, true);
+    });
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.pendingEvent = null;
+  }
+
+  _windowEventHandler(event) {
+    if (event.source === WINDOW_EVENT_SOURCE_TYPE.APP) return;
+    const target = event.target;
+    if (target && INTERACTIVE_TAGS.includes(target.tagName)) return;
+
+    const eventType = event.type;
+    if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventType)) {
+      const active = document.activeElement;
+      if (active && INTERACTIVE_TAGS.includes(active.tagName)) return;
+    }
+    if (HIGH_FREQUENCY_WINDOW_EVENT_TYPES.includes(eventType)) {
+      this.pendingEvent = createWindowEventData({ eventType, event });
+      if (this.rafId === null) {
+        this.rafId = requestAnimationFrame(() => {
+          if (this.pendingEvent) {
+            this.postWindowEvent(this.pendingEvent);
+            this.pendingEvent = null;
+            this.rafId = null;
+          }
+        });
+      }
+      return;
+    }
+    this.postWindowEvent(createWindowEventData({ eventType, event }));
   }
 
   async request(method, params) {
@@ -186,6 +199,9 @@ export class IframeAdapter {
 
   handleMessage(event) {
     const { type, requestId, data, error, eventType, payload } = event.data;
+    if (type && type.includes('COMMENT')) {
+      console.log('--- SDK handleMessage ---', type);
+    }
     if (type === POST_MESSAGE_TYPE.HTML_PAGE_RESPONSE) {
       const pending = this.pendingRequests[requestId];
       if (pending) {
@@ -199,62 +215,74 @@ export class IframeAdapter {
       }
     } else if (type === POST_MESSAGE_TYPE.HTML_PAGE_EVENT) {
       this.emitEvent(eventType, payload);
+    } else if (type === POST_MESSAGE_TYPE.HTML_PAGE_ENABLE_COMMENT_MODE) {
+      this.isCommentMode = true;
+      this.unbindInteractiveEvents();
+      if (this.commentModeAdapter) this.commentModeAdapter.enable();
+    } else if (type === POST_MESSAGE_TYPE.HTML_PAGE_DISABLE_COMMENT_MODE) {
+      this.isCommentMode = false;
+      if (this.commentModeAdapter) this.commentModeAdapter.disable();
+      this.bindInteractiveEvents();
     } else if (type === POST_MESSAGE_TYPE.WINDOW_EVENT) {
-      const eventData = data.event_data;
-      if (!eventData) return;
-      let syntheticEvent;
-      let targetElement;
-      if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventData.type)) {
-        syntheticEvent = new KeyboardEvent(eventData.type, {
-          bubbles: true,
-          cancelable: true,
-          key: eventData.key,
-          code: eventData.code,
-          keyCode: eventData.keyCode,
-          ctrlKey: eventData.ctrlKey,
-          shiftKey: eventData.shiftKey,
-          altKey: eventData.altKey,
-          metaKey: eventData.metaKey,
-          repeat: eventData.repeat,
-          view: window,
-        });
-        targetElement = document.activeElement || document.body;
-      } else if (SUPPORT_WINDOW_MOUSE_EVENT_TYPES.includes(eventData.type)) {
-        syntheticEvent = new MouseEvent(eventData.type, {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX: eventData.x,
-          clientY: eventData.y,
-          screenX: eventData.x,
-          screenY: eventData.y,
-          button: eventData.button,
-          buttons: eventData.buttons,
-        });
-        const elementAtPoint = document.elementFromPoint(eventData.x, eventData.y);
-        targetElement = elementAtPoint || document.body;
-      } else if (SUPPORT_WINDOW_DRAG_EVENT_TYPES.includes(eventData.type)) {
-        syntheticEvent = new DragEvent(eventData.type, {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX: eventData.x,
-          clientY: eventData.y,
-          screenX: eventData.x,
-          screenY: eventData.y,
-          button: eventData.button,
-          buttons: eventData.buttons,
-        });
-        const elementAtPoint = document.elementFromPoint(eventData.x, eventData.y);
-        targetElement = elementAtPoint || document.body;
-      }
-
-      if (!targetElement || !syntheticEvent) return;
-
-      // Dispatch once on the target element, it will bubble up naturally
-      syntheticEvent.source = eventData.source;
-      targetElement.dispatchEvent(syntheticEvent);
+      this.handleWindowEvent(data);
     }
+  }
+
+  handleWindowEvent(data) {
+    const eventData = data.event_data;
+    if (!eventData || this.isCommentMode) return;
+    let syntheticEvent;
+    let targetElement;
+    if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventData.type)) {
+      syntheticEvent = new KeyboardEvent(eventData.type, {
+        bubbles: true,
+        cancelable: true,
+        key: eventData.key,
+        code: eventData.code,
+        keyCode: eventData.keyCode,
+        ctrlKey: eventData.ctrlKey,
+        shiftKey: eventData.shiftKey,
+        altKey: eventData.altKey,
+        metaKey: eventData.metaKey,
+        repeat: eventData.repeat,
+        view: window,
+      });
+      targetElement = document.activeElement || document.body;
+    } else if (SUPPORT_WINDOW_MOUSE_EVENT_TYPES.includes(eventData.type)) {
+      syntheticEvent = new MouseEvent(eventData.type, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: eventData.x,
+        clientY: eventData.y,
+        screenX: eventData.x,
+        screenY: eventData.y,
+        button: eventData.button,
+        buttons: eventData.buttons,
+      });
+      const elementAtPoint = document.elementFromPoint(eventData.x, eventData.y);
+      targetElement = elementAtPoint || document.body;
+    } else if (SUPPORT_WINDOW_DRAG_EVENT_TYPES.includes(eventData.type)) {
+      syntheticEvent = new DragEvent(eventData.type, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: eventData.x,
+        clientY: eventData.y,
+        screenX: eventData.x,
+        screenY: eventData.y,
+        button: eventData.button,
+        buttons: eventData.buttons,
+      });
+      const elementAtPoint = document.elementFromPoint(eventData.x, eventData.y);
+      targetElement = elementAtPoint || document.body;
+    }
+
+    if (!targetElement || !syntheticEvent) return;
+
+    // Dispatch once on the target element, it will bubble up naturally
+    syntheticEvent.source = eventData.source;
+    targetElement.dispatchEvent(syntheticEvent);
   }
 
   on(eventType, handler) {
@@ -294,5 +322,8 @@ export class IframeAdapter {
     });
     this.pendingRequests = {};
     this.eventHandlers = {};
+    if (this.commentModeAdapter) {
+      this.commentModeAdapter.destroy();
+    }
   }
 }

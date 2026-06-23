@@ -38,6 +38,14 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
   }
 
+  listCollaborators() {
+    return this.htmlPageAPI.listCollaborators();
+  }
+
+  resolveUsers({ userIds } = {}) {
+    return this.htmlPageAPI.resolveUsers(userIds);
+  }
+
   addRow({ tableName, rowData }) {
     return this.htmlPageAPI.addRow(this.options.pageId, tableName, rowData);
   }

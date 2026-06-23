@@ -57,6 +57,17 @@ class HTMLPageAPI {
     return this.req.get(url, { params });
   }
 
+  listCollaborators() {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-collaborators/`;
+    return this.req.get(url);
+  }
+
+  resolveUsers(user_ids) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-users/resolve/`;
+    const data = { user_ids };
+    return this.req.post(url, data);
+  }
+
   addRow(page_id, table_name, row_data) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, row_data };

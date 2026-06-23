@@ -97,6 +97,56 @@ describe('HTMLPageAPI.listRows', () => {
   });
 });
 
+describe('HTMLPageAPI.listCollaborators', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('lists collaborators', () => {
+    const { api, get } = createApi();
+    const response = {
+      data: {
+        collaborator_list: [{ email: 'user@example.com', name: 'User' }],
+      },
+    };
+    get.mockReturnValue(response);
+
+    const result = api.listCollaborators();
+
+    expect(result).toEqual(response);
+    expect(get).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-collaborators/',
+    );
+  });
+
+});
+
+describe('HTMLPageAPI.resolveUsers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('resolves users', () => {
+    const { api, post } = createApi();
+    const response = {
+      data: {
+        user_list: [{ email: 'user@example.com', name: 'User' }],
+      },
+    };
+    post.mockReturnValue(response);
+
+    const result = api.resolveUsers(['user@example.com']);
+
+    expect(result).toEqual(response);
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-users/resolve/',
+      {
+        user_ids: ['user@example.com'],
+      },
+    );
+  });
+});
+
 describe('HTMLPageAPI.addRow(s)', () => {
   beforeEach(() => {
     jest.clearAllMocks();

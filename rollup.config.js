@@ -4,6 +4,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import babel from '@rollup/plugin-babel';
 import terser from '@rollup/plugin-terser';
+import eslint from '@rollup/plugin-eslint';
 
 export default defineConfig([
   {
@@ -26,6 +27,10 @@ export default defineConfig([
       }
     ],
     plugins: [
+      eslint({
+        throwOnError: true,
+        throwOnWarning: false,
+      }),
       resolve({ browser: true }),
       babel({
         exclude: 'node_modules/**',
@@ -68,6 +73,10 @@ export default defineConfig([
       /node_modules/,
     ],
     plugins: [
+      eslint({
+        throwOnError: true,
+        throwOnWarning: false,
+      }),
       resolve(), // resolve third-party modules
       babel({
         exclude: 'node_modules/**',

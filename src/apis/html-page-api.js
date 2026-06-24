@@ -12,6 +12,7 @@ class HTMLPageAPI {
         this.accessToken = res.data?.access_token || '';
         this.createReq();
       } catch (error) {
+        // eslint-disable-next-line
         console.log('Authorization failed');
       }
     }

@@ -100,8 +100,8 @@ export class CommentModeAdapter {
     window.removeEventListener('scroll', this._handleScroll, true);
     this.hoverTarget = null;
     this.selectedTarget = null;
-    if (this._scrollRAF) cancelAnimationFrame(this._scrollRAF);
-    if (this._hoverRAF) cancelAnimationFrame(this._hoverRAF);
+    if (this._scrollRAF !== null) cancelAnimationFrame(this._scrollRAF);
+    if (this._hoverRAF !== null) cancelAnimationFrame(this._hoverRAF);
     this._scrollRAF = null;
     this._hoverRAF = null;
     this.removeCommentStyle();
@@ -110,7 +110,7 @@ export class CommentModeAdapter {
   _handleScroll() {
     if (!this.isActive) return;
 
-    if (this._scrollRAF) return;
+    if (this._scrollRAF !== null) return;
     this._scrollRAF = requestAnimationFrame(() => {
       this._scrollRAF = null;
 
@@ -151,10 +151,23 @@ export class CommentModeAdapter {
     const target = event.target;
     const isBodyOrHtml = target === document.body || target === document.documentElement;
 
-    if (event.type === 'mouseover') {
+    if ((event.type === 'mouseout' || event.type === 'mouseleave') && event.relatedTarget === null) {
+      const hadHoverTarget = this.hoverTarget !== null;
+      const hadPendingHover = this._hoverRAF !== null;
+      this.hoverTarget = null;
+
+      if (hadPendingHover) {
+        cancelAnimationFrame(this._hoverRAF);
+        this._hoverRAF = null;
+      }
+
+      if (hadHoverTarget || hadPendingHover) {
+        window.parent.postMessage({ type: POST_MESSAGE_TYPE.HTML_PAGE_COMMENT_MODE_ELEMENT_HOVER, data: null }, '*');
+      }
+    } else if (event.type === 'mouseover') {
       this.hoverTarget = isBodyOrHtml ? null : target;
 
-      if (this._hoverRAF) return;
+      if (this._hoverRAF !== null) return;
       this._hoverRAF = requestAnimationFrame(() => {
         this._hoverRAF = null;
         const currentTarget = this.hoverTarget;

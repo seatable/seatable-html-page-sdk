@@ -78,6 +78,7 @@ export class IframeAdapter {
     this.timeout = this.options.timeout || 10000;
     this.isCommentMode = false;
     this.commentModeAdapter = new CommentModeAdapter();
+    this._handleMessage = this.handleMessage.bind(this);
     this.setupMessageListener();
   }
 
@@ -91,7 +92,7 @@ export class IframeAdapter {
 
   setupMessageListener() {
     if (this.selfWindow) return;
-    window.addEventListener('message', this.handleMessage.bind(this));
+    window.addEventListener('message', this._handleMessage);
     this.setEventsListener();
   }
 
@@ -198,10 +199,10 @@ export class IframeAdapter {
   }
 
   handleMessage(event) {
-    const { type, requestId, data, error, eventType, payload } = event.data;
-    if (type && type.includes('COMMENT')) {
-      console.log('--- SDK handleMessage ---', type);
-    }
+    const message = event && event.data;
+    if (!message || typeof message !== 'object' || Array.isArray(message)) return;
+
+    const { type, requestId, data, error, eventType, payload } = message;
     if (type === POST_MESSAGE_TYPE.HTML_PAGE_RESPONSE) {
       const pending = this.pendingRequests[requestId];
       if (pending) {
@@ -210,7 +211,11 @@ export class IframeAdapter {
         if (error) {
           pending.reject(new Error(error));
         } else {
-          pending.resolve(data ? JSON.parse(data) : null);
+          try {
+            pending.resolve(data ? JSON.parse(data) : null);
+          } catch {
+            pending.reject(new Error('Invalid response payload'));
+          }
         }
       }
     } else if (type === POST_MESSAGE_TYPE.HTML_PAGE_EVENT) {
@@ -229,8 +234,11 @@ export class IframeAdapter {
   }
 
   handleWindowEvent(data) {
-    const eventData = data.event_data;
-    if (!eventData || this.isCommentMode) return;
+    const eventData = data && typeof data === 'object' && !Array.isArray(data)
+      ? data.event_data
+      : null;
+    const isValidEventData = eventData && typeof eventData === 'object' && !Array.isArray(eventData);
+    if (!isValidEventData || this.isCommentMode) return;
     let syntheticEvent;
     let targetElement;
     if (SUPPORT_WINDOW_KEYBOARD_EVENT_TYPES.includes(eventData.type)) {
@@ -316,14 +324,21 @@ export class IframeAdapter {
   }
 
   destroy() {
-    this.pendingRequests.forEach(pending => {
+    if (!this.selfWindow) {
+      window.removeEventListener('message', this._handleMessage);
+      this.unbindInteractiveEvents();
+    }
+
+    this.isCommentMode = false;
+    if (this.commentModeAdapter) {
+      this.commentModeAdapter.destroy();
+    }
+
+    Object.values(this.pendingRequests).forEach(pending => {
       clearTimeout(pending.timeoutId);
       pending.reject(new Error('Adapter destroyed'));
     });
     this.pendingRequests = {};
     this.eventHandlers = {};
-    if (this.commentModeAdapter) {
-      this.commentModeAdapter.destroy();
-    }
   }
 }

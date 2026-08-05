@@ -31,6 +31,59 @@ function createApi() {
   return { api, get, post, put, del };
 }
 
+describe('HTMLPageAPI.queryRows', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('queryRows posts table id and filters to the query endpoint', () => {
+    const { api, post } = createApi();
+
+    const response = { data: { metadata: [], results: [] } };
+    post.mockReturnValue(response);
+
+    const filters = [{ columnKey: 'phone', value: '13800138000' }];
+    const result = api.queryRows('page-1', 'tbl-1', filters, 0, 100);
+
+    expect(result).toEqual(response);
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
+      {
+        page_id: 'page-1',
+        table_id: 'tbl-1',
+        filters,
+        start: 0,
+        limit: 100,
+      },
+    );
+  });
+
+  it('queryRows sends query_config for ai_agent preview', () => {
+    const { api, post } = createApi();
+    const queryConfig = {
+      table_id: 'tbl-1',
+      columns_keys: ['phone'],
+      query_rows_permission: {
+        query_columns: [{ column_key: 'phone', enable_fuzzy_query: true }],
+      },
+    };
+
+    api.queryRows('ai_agent', 'tbl-1', [{ columnKey: 'phone', value: '138' }], 0, 20, queryConfig);
+
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
+      {
+        page_id: 'ai_agent',
+        table_id: 'tbl-1',
+        filters: [{ columnKey: 'phone', value: '138' }],
+        start: 0,
+        limit: 20,
+        query_config: queryConfig,
+      },
+    );
+  });
+});
+
 describe('HTMLPageAPI.listRows', () => {
   beforeEach(() => {
     jest.clearAllMocks();

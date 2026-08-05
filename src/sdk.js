@@ -21,6 +21,10 @@ export class HTMLPageSDK {
     if (!this.options.pageId) {
       this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
     }
+    if (this.options.pageId === 'ai_agent' && !Array.isArray(this.options.queryTableConfigs)) {
+      const queryTableConfigs = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_QUERY_TABLE_CONFIGS);
+      this.options.queryTableConfigs = Array.isArray(queryTableConfigs) ? queryTableConfigs : [];
+    }
     if (this.options.accountToken) {
       // dev: try to get access-token via accountToken
       const { server, accountToken, appUuid } = this.options;
@@ -36,6 +40,21 @@ export class HTMLPageSDK {
 
   listRows({ tableName, start, limit }) {
     return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
+  }
+
+  queryRows({ tableId, filters, start, limit }) {
+    let queryConfig;
+    if (this.options.pageId === 'ai_agent' && tableId && Array.isArray(this.options.queryTableConfigs)) {
+      const tableConfig = this.options.queryTableConfigs.find(config => config?.table_id === tableId);
+      if (tableConfig) {
+        queryConfig = {
+          table_id: tableConfig.table_id,
+          columns_keys: tableConfig.columns_keys,
+          query_rows_permission: tableConfig.permissions?.query_rows_permission || {},
+        };
+      }
+    }
+    return this.htmlPageAPI.queryRows(this.options.pageId, tableId, filters, start, limit, queryConfig);
   }
 
   listCollaborators() {

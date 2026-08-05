@@ -58,6 +58,15 @@ class HTMLPageAPI {
     return this.req.get(url, { params });
   }
 
+  queryRows(page_id, table_id, filters, start, limit, query_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/query/`;
+    const data = { page_id, table_id, filters, start, limit };
+    if (query_config && typeof query_config === 'object') {
+      data.query_config = query_config;
+    }
+    return this.req.post(url, data);
+  }
+
   listCollaborators() {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-collaborators/`;
     return this.req.get(url);

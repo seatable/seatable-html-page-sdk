@@ -1,6 +1,7 @@
 import { HTMLPageSDK } from '../src/sdk';
 
 const mockListRows = jest.fn();
+const mockQueryRows = jest.fn();
 const mockListCollaborators = jest.fn();
 const mockResolveUsers = jest.fn();
 const mockAddRow = jest.fn();
@@ -19,6 +20,7 @@ jest.mock('../src/iframe-adapter', () => ({
     GET_ACCESS_TOKEN: 'get_access_token',
     GET_APP_UUID: 'get_app_uuid',
     GET_PAGE_ID: 'get_page_id',
+    GET_QUERY_TABLE_CONFIGS: 'get_query_table_configs',
   },
 }));
 
@@ -56,6 +58,46 @@ describe('rows', () => {
 
     expect(result).toBe(response);
     expect(mockListRows).toHaveBeenCalledWith('page-1', 'TableName', 0, 100);
+  });
+
+  it('query rows by table id', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = { queryRows: mockQueryRows };
+
+    const filters = [{ columnKey: '0000', value: 'TEST2026070001' }];
+    sdk.queryRows({ tableId: 'REW7', filters });
+
+    expect(mockQueryRows).toHaveBeenCalledWith('page-1', 'REW7', filters, undefined, undefined, undefined);
+  });
+
+  it('query rows includes the configured table query settings for ai_agent preview', () => {
+    const queryConfig = {
+      table_id: 'REW7',
+      columns_keys: ['0000', 'wbyd'],
+      permissions: {
+        query_rows_permission: {
+          query_columns: [{ column_key: '0000', enable_fuzzy_query: true, case_sensitive: false }],
+        },
+      },
+    };
+    const sdk = new HTMLPageSDK({ pageId: 'ai_agent', queryTableConfigs: [queryConfig] });
+    sdk.htmlPageAPI = { queryRows: mockQueryRows };
+
+    const filters = [{ columnKey: '0000', value: '202607' }];
+    sdk.queryRows({ tableId: 'REW7', filters });
+
+    expect(mockQueryRows).toHaveBeenCalledWith(
+      'ai_agent',
+      'REW7',
+      filters,
+      undefined,
+      undefined,
+      {
+        table_id: 'REW7',
+        columns_keys: ['0000', 'wbyd'],
+        query_rows_permission: queryConfig.permissions.query_rows_permission,
+      },
+    );
   });
 
   it('list collaborators', () => {

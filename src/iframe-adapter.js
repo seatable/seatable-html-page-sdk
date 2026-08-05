@@ -10,6 +10,7 @@ export const POST_MESSAGE_REQUEST_TYPE = {
   GET_ACCESS_TOKEN: 'get_access_token',
   GET_APP_UUID: 'get_app_uuid',
   GET_PAGE_ID: 'get_page_id',
+  GET_QUERY_TABLE_CONFIGS: 'get_query_table_configs',
 };
 
 const WINDOW_EVENT_SOURCE_TYPE = {

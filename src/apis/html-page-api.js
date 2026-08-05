@@ -52,9 +52,15 @@ class HTMLPageAPI {
     return this.req.put(url, data, { headers: { 'Content-Type': 'application/json' } });
   }
 
-  listRows(page_id, table_name, start, limit) {
+  listRows(page_id, table_name, start, limit, view_name, view_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const params = { page_id, table_name, start, limit };
+    if (view_name) {
+      params.view_name = view_name;
+    }
+    if (view_config && typeof view_config === 'object') {
+      params.view_config = JSON.stringify(view_config);
+    }
     return this.req.get(url, { params });
   }
 

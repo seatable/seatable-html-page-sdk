@@ -24,7 +24,7 @@ jest.mock('../src/iframe-adapter', () => ({
     GET_ACCESS_TOKEN: 'get_access_token',
     GET_APP_UUID: 'get_app_uuid',
     GET_PAGE_ID: 'get_page_id',
-    GET_QUERY_TABLE_CONFIGS: 'get_query_table_configs',
+    GET_PREVIEW_TABLE_CONFIGS: 'get_preview_table_configs',
   },
 }));
 
@@ -80,20 +80,20 @@ describe('HTMLPageSDK.init', () => {
     expect(sdk.options.accountToken).toBe('account-token');
   });
 
-  it('loads query table configs for ai_agent preview', async () => {
-    const queryTableConfigs = [{ table_id: 'REW7', columns_keys: ['0000'] }];
+  it('loads table permission configs for ai_agent preview', async () => {
+    const previewTableConfigs = [{ table_id: 'REW7', permissions: {} }];
     mockRequest
       .mockResolvedValueOnce('https://example.com')
       .mockResolvedValueOnce('app-uuid')
       .mockResolvedValueOnce('ai_agent')
-      .mockResolvedValueOnce(queryTableConfigs)
+      .mockResolvedValueOnce(previewTableConfigs)
       .mockResolvedValueOnce('access-token');
 
     const sdk = new HTMLPageSDK();
     await sdk.init();
 
-    expect(mockRequest).toHaveBeenNthCalledWith(4, 'get_query_table_configs');
+    expect(mockRequest).toHaveBeenNthCalledWith(4, 'get_preview_table_configs');
     expect(mockRequest).toHaveBeenNthCalledWith(5, 'get_access_token');
-    expect(sdk.options.queryTableConfigs).toEqual(queryTableConfigs);
+    expect(sdk.options.previewTableConfigs).toEqual(previewTableConfigs);
   });
 });

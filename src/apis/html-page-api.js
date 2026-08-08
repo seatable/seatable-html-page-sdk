@@ -52,17 +52,20 @@ class HTMLPageAPI {
     return this.req.put(url, data, { headers: { 'Content-Type': 'application/json' } });
   }
 
-  listRows(page_id, table_name, start, limit) {
+  listRows(page_id, table_name, start, limit, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const params = { page_id, table_name, start, limit };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      params.preview_table_config = JSON.stringify(preview_table_config);
+    }
     return this.req.get(url, { params });
   }
 
-  queryRows(page_id, table_id, filters, start, limit, query_config) {
+  queryRows(page_id, table_id, filters, start, limit, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/query/`;
     const data = { page_id, table_id, filters, start, limit };
-    if (query_config && typeof query_config === 'object') {
-      data.query_config = query_config;
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
     }
     return this.req.post(url, data);
   }
@@ -78,33 +81,48 @@ class HTMLPageAPI {
     return this.req.post(url, data);
   }
 
-  addRow(page_id, table_name, row_data) {
+  addRow(page_id, table_name, row_data, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, row_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
     return this.req.post(url, data);
   }
 
-  addRows(page_id, table_name, rows_data) {
+  addRows(page_id, table_name, rows_data, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/batch/`;
     const data = { page_id, table_name, rows_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
     return this.req.post(url, data);
   }
 
-  updateRow(page_id, table_name, row_id, row_data) {
+  updateRow(page_id, table_name, row_id, row_data, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, row_id, row_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
     return this._sendPut(url, data);
   }
 
-  updateRows(page_id, table_name, rows_data) {
+  updateRows(page_id, table_name, rows_data, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/batch/`;
     const data = { page_id, table_name, rows_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
     return this._sendPut(url, data);
   }
 
-  deleteRows(page_id, table_name, rows_ids) {
+  deleteRows(page_id, table_name, rows_ids, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/`;
     const data = { page_id, table_name, rows_ids };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
     return this._sendDelete(url, data);
   }
 

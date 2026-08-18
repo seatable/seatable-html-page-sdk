@@ -60,11 +60,11 @@ describe('rows', () => {
     expect(mockListRows).toHaveBeenCalledWith('page-1', 'TableName', 0, 100, undefined);
   });
 
-  it('query rows by table id', () => {
+  it('query rows by table and column names', () => {
     const sdk = new HTMLPageSDK({ pageId: 'page-1' });
     sdk.htmlPageAPI = { queryRows: mockQueryRows };
 
-    const conditions = [{ columnKey: '0000', value: 'TEST2026070001' }];
+    const conditions = [{ columnName: 'Order Number', value: 'TEST2026070001' }];
     sdk.queryRows({ tableName: 'Order', conditions });
 
     expect(mockQueryRows).toHaveBeenCalledWith('page-1', 'Order', conditions, undefined, undefined, undefined);
@@ -85,7 +85,7 @@ describe('rows', () => {
     const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
     sdk.htmlPageAPI = { queryRows: mockQueryRows };
 
-    const conditions = [{ columnKey: '0000', value: '202607' }];
+    const conditions = [{ columnName: 'Order Number', value: '202607' }];
     sdk.queryRows({ tableName: 'Order', conditions });
 
     expect(mockQueryRows).toHaveBeenCalledWith(

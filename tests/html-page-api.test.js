@@ -42,7 +42,7 @@ describe('HTMLPageAPI.queryRows', () => {
     const response = { data: { metadata: [], results: [] } };
     post.mockReturnValue(response);
 
-    const conditions = [{ columnKey: 'phone', value: '13800138000' }];
+    const conditions = [{ columnName: 'Phone', value: '13800138000' }];
     const result = api.queryRows('page-1', 'Orders', conditions, 0, 100);
 
     expect(result).toEqual(response);
@@ -71,14 +71,14 @@ describe('HTMLPageAPI.queryRows', () => {
       },
     };
 
-    api.queryRows('ai_agent', 'Orders', [{ columnKey: 'phone', value: '138' }], 0, 20, previewTableConfig);
+    api.queryRows('ai_agent', 'Orders', [{ columnName: 'Phone', value: '138' }], 0, 20, previewTableConfig);
 
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
       {
         page_id: 'ai_agent',
         table_name: 'Orders',
-        conditions: [{ columnKey: 'phone', value: '138' }],
+        conditions: [{ columnName: 'Phone', value: '138' }],
         start: 0,
         limit: 20,
         preview_table_config: previewTableConfig,

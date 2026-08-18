@@ -36,22 +36,22 @@ describe('HTMLPageAPI.queryRows', () => {
     jest.clearAllMocks();
   });
 
-  it('queryRows posts table id and filters to the query endpoint', () => {
+  it('queryRows posts table name and conditions to the query endpoint', () => {
     const { api, post } = createApi();
 
     const response = { data: { metadata: [], results: [] } };
     post.mockReturnValue(response);
 
-    const filters = [{ columnKey: 'phone', value: '13800138000' }];
-    const result = api.queryRows('page-1', 'tbl-1', filters, 0, 100);
+    const conditions = [{ columnKey: 'phone', value: '13800138000' }];
+    const result = api.queryRows('page-1', 'Orders', conditions, 0, 100);
 
     expect(result).toEqual(response);
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
       {
         page_id: 'page-1',
-        table_id: 'tbl-1',
-        filters,
+        table_name: 'Orders',
+        conditions,
         start: 0,
         limit: 100,
       },
@@ -71,14 +71,14 @@ describe('HTMLPageAPI.queryRows', () => {
       },
     };
 
-    api.queryRows('ai_agent', 'tbl-1', [{ columnKey: 'phone', value: '138' }], 0, 20, previewTableConfig);
+    api.queryRows('ai_agent', 'Orders', [{ columnKey: 'phone', value: '138' }], 0, 20, previewTableConfig);
 
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
       {
         page_id: 'ai_agent',
-        table_id: 'tbl-1',
-        filters: [{ columnKey: 'phone', value: '138' }],
+        table_name: 'Orders',
+        conditions: [{ columnKey: 'phone', value: '138' }],
         start: 0,
         limit: 20,
         preview_table_config: previewTableConfig,

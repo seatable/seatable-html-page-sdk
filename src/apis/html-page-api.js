@@ -61,9 +61,9 @@ class HTMLPageAPI {
     return this.req.get(url, { params });
   }
 
-  queryRows(page_id, table_id, filters, start, limit, preview_table_config) {
+  queryRows(page_id, table_name, conditions, start, limit, preview_table_config) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-rows/query/`;
-    const data = { page_id, table_id, filters, start, limit };
+    const data = { page_id, table_name, conditions, start, limit };
     if (preview_table_config && typeof preview_table_config === 'object') {
       data.preview_table_config = preview_table_config;
     }

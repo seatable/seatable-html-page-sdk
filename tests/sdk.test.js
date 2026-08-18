@@ -64,10 +64,10 @@ describe('rows', () => {
     const sdk = new HTMLPageSDK({ pageId: 'page-1' });
     sdk.htmlPageAPI = { queryRows: mockQueryRows };
 
-    const filters = [{ columnKey: '0000', value: 'TEST2026070001' }];
-    sdk.queryRows({ tableId: 'REW7', filters });
+    const conditions = [{ columnKey: '0000', value: 'TEST2026070001' }];
+    sdk.queryRows({ tableName: 'Order', conditions });
 
-    expect(mockQueryRows).toHaveBeenCalledWith('page-1', 'REW7', filters, undefined, undefined, undefined);
+    expect(mockQueryRows).toHaveBeenCalledWith('page-1', 'Order', conditions, undefined, undefined, undefined);
   });
 
   it('query rows includes the configured table permissions for ai_agent preview', () => {
@@ -85,13 +85,13 @@ describe('rows', () => {
     const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
     sdk.htmlPageAPI = { queryRows: mockQueryRows };
 
-    const filters = [{ columnKey: '0000', value: '202607' }];
-    sdk.queryRows({ tableId: 'REW7', filters });
+    const conditions = [{ columnKey: '0000', value: '202607' }];
+    sdk.queryRows({ tableName: 'Order', conditions });
 
     expect(mockQueryRows).toHaveBeenCalledWith(
       'ai_agent',
-      'REW7',
-      filters,
+      'Order',
+      conditions,
       undefined,
       undefined,
       {

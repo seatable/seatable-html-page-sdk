@@ -43,17 +43,14 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit, previewTableConfig);
   }
 
-  queryRows({ tableId, filters, start, limit }) {
-    const previewTableConfig = this._getPreviewTableConfig({ tableId });
-    return this.htmlPageAPI.queryRows(this.options.pageId, tableId, filters, start, limit, previewTableConfig);
+  queryRows({ tableName, conditions, start, limit }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.queryRows(this.options.pageId, tableName, conditions, start, limit, previewTableConfig);
   }
 
-  _getPreviewTableConfig({ tableId, tableName }) {
+  _getPreviewTableConfig({ tableName }) {
     if (this.options.pageId !== 'ai_agent' || !Array.isArray(this.options.previewTableConfigs)) return undefined;
-    const tableConfig = this.options.previewTableConfigs.find(config => {
-      if (tableId) return config?.table_id === tableId;
-      return tableName && config?.table_name === tableName;
-    });
+    const tableConfig = this.options.previewTableConfigs.find(config => tableName && config?.table_name === tableName);
     if (!tableConfig) return undefined;
     return {
       table_id: tableConfig.table_id,

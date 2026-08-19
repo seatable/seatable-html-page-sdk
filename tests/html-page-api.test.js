@@ -6,6 +6,7 @@ jest.mock('axios', () => ({
   default: {
     create: jest.fn(),
     get: jest.fn(),
+    post: jest.fn(),
   },
 }));
 
@@ -23,7 +24,7 @@ function createApi() {
 
   const api = new HTMLPageAPI();
   api.init({
-    server: 'https://example.com',
+    server: 'https://example.com/',
     accessToken: 'token',
     appUuid: 'app-uuid',
   });
@@ -98,7 +99,7 @@ describe('HTMLPageAPI.listRows', () => {
 
     const api = new HTMLPageAPI();
     api.init({
-      server: 'https://example.com',
+      server: 'https://example.com/',
       accessToken: 'token',
       appUuid: 'app-uuid',
     });
@@ -415,7 +416,7 @@ describe('HTMLPageAPI.upload', () => {
 
     const api = new HTMLPageAPI();
     api.init({
-      server: 'https://example.com',
+      server: 'https://example.com/',
       accessToken: 'token',
       appUuid: 'app-uuid',
     });
@@ -455,7 +456,7 @@ describe('HTMLPageAPI.upload', () => {
 
     const api = new HTMLPageAPI();
     api.init({
-      server: 'https://example.com',
+      server: 'https://example.com/',
       accessToken: 'token',
       appUuid: 'app-uuid',
     });
@@ -483,5 +484,91 @@ describe('HTMLPageAPI.upload', () => {
       type: 'image',
       url: 'https://assets.example.com/images/image.png',
     });
+  });
+});
+
+describe('HTMLPageAPI.initWithAccountToken', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('rejects with the access-token request error', async () => {
+    axios.get.mockRejectedValue(new Error('Request failed with status code 401'));
+    const api = new HTMLPageAPI();
+
+    await expect(api.initWithAccountToken({
+      server: 'https://custom-app-server.example.com/',
+      accountToken: 'invalid-account-token',
+      appUuid: 'app-uuid',
+    })).rejects.toThrow('Failed to get access token: Request failed with status code 401');
+  });
+
+  it('requires development access-token configuration', async () => {
+    const api = new HTMLPageAPI();
+
+    await expect(api.initWithAccountToken({
+      server: 'https://custom-app-server.example.com/',
+      accountToken: 'account-token',
+      appUuid: '',
+    })).rejects.toThrow('Failed to get access token: missing server, accountToken, or appUuid');
+    expect(axios.get).not.toHaveBeenCalled();
+  });
+
+  it('rejects when the access-token response does not contain an access token', async () => {
+    axios.get.mockResolvedValue({ data: {} });
+    const api = new HTMLPageAPI();
+
+    const error = await api.initWithAccountToken({
+      server: 'https://custom-app-server.example.com/',
+      accountToken: 'account-token',
+      appUuid: 'app-uuid',
+    }).catch(error => error);
+
+    expect(error.message).toBe('Failed to get access token: access_token missing');
+  });
+});
+
+describe('HTMLPageAPI.getParentOrigin', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('uses the custom-app-server bootstrap endpoint with the app access token', async () => {
+    axios.post.mockResolvedValue({ data: { parentOrigin: 'https://app.example.com' } });
+    const api = new HTMLPageAPI();
+
+    await expect(api.getParentOrigin({
+      server: 'https://custom-app-server.example.com/',
+      accessToken: 'access-token',
+      appUuid: 'app-uuid',
+    })).resolves.toBe('https://app.example.com');
+
+    expect(axios.post).toHaveBeenCalledWith(
+      'https://custom-app-server.example.com/api/v2.1/universal-apps/bootstrap/',
+      { app_uuid: 'app-uuid' },
+      { headers: { Authorization: 'Token access-token' } },
+    );
+  });
+
+  it('adds parentOrigin context when the bootstrap request fails', async () => {
+    axios.post.mockRejectedValue(new Error('Request failed with status code 401'));
+    const api = new HTMLPageAPI();
+
+    await expect(api.getParentOrigin({
+      server: 'https://custom-app-server.example.com/',
+      accessToken: 'invalid-access-token',
+      appUuid: 'app-uuid',
+    })).rejects.toThrow('Failed to get parentOrigin: Request failed with status code 401');
+  });
+
+  it('requires bootstrap configuration', async () => {
+    const api = new HTMLPageAPI();
+
+    await expect(api.getParentOrigin({
+      server: 'https://custom-app-server.example.com/',
+      accessToken: 'access-token',
+      appUuid: '',
+    })).rejects.toThrow('Failed to get parentOrigin: missing server, accessToken, or appUuid');
+    expect(axios.post).not.toHaveBeenCalled();
   });
 });

@@ -2,24 +2,28 @@ import axios from 'axios';
 
 class HTMLPageAPI {
   async initWithAccountToken({ server, accountToken, appUuid }) {
-    this.initServer(server);
-    this.appUuid = appUuid;
-    if (this.server && this.appUuid) {
-      try {
-        const res = await axios.get(`${this.server}api/v2.1/universal-apps/${this.appUuid}/access-token/`, {
-          headers: { Authorization: 'Token ' + accountToken }
-        });
-        this.accessToken = res.data?.access_token || '';
-        this.createReq();
-      } catch (error) {
-        // eslint-disable-next-line
-        console.log('Authorization failed');
-      }
+    if (!server || !accountToken || !appUuid) {
+      throw new Error('Failed to get access token: missing server, accountToken, or appUuid');
     }
+
+    let res;
+    try {
+      res = await axios.get(`${server}api/v2.1/universal-apps/${appUuid}/access-token/`, {
+        headers: { Authorization: 'Token ' + accountToken }
+      });
+    } catch (error) {
+      throw new Error(`Failed to get access token: ${error.message}`);
+    }
+
+    const accessToken = res.data?.access_token;
+    if (!accessToken) {
+      throw new Error('Failed to get access token: access_token missing');
+    }
+    this.accessToken = accessToken;
   }
 
   init({ server, accessToken, appUuid }) {
-    this.initServer(server);
+    this.server = server;
     this.accessToken = accessToken || '';
     this.appUuid = appUuid;
     if (this.accessToken && this.server && this.appUuid) {
@@ -27,9 +31,21 @@ class HTMLPageAPI {
     }
   }
 
-  initServer(server) {
-    if (!server) return;
-    this.server = server.endsWith('/') ? server : `${server}/`;
+  async getParentOrigin({ server, accessToken, appUuid }) {
+    if (!server || !accessToken || !appUuid) {
+      throw new Error('Failed to get parentOrigin: missing server, accessToken, or appUuid');
+    }
+
+    try {
+      const response = await axios.post(
+        `${server}api/v2.1/universal-apps/bootstrap/`,
+        { app_uuid: appUuid },
+        { headers: { Authorization: 'Token ' + accessToken } },
+      );
+      return response.data?.parentOrigin || '';
+    } catch (error) {
+      throw new Error(`Failed to get parentOrigin: ${error.message}`);
+    }
   }
 
   createReq() {

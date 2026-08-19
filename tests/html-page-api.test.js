@@ -31,6 +31,62 @@ function createApi() {
   return { api, get, post, put, del };
 }
 
+describe('HTMLPageAPI.queryRows', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('queryRows posts table name and conditions to the query endpoint', () => {
+    const { api, post } = createApi();
+
+    const response = { data: { metadata: [], results: [] } };
+    post.mockReturnValue(response);
+
+    const conditions = [{ columnName: 'Phone', value: '13800138000' }];
+    const result = api.queryRows('page-1', 'Orders', conditions, 0, 100);
+
+    expect(result).toEqual(response);
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
+      {
+        page_id: 'page-1',
+        table_name: 'Orders',
+        conditions,
+        start: 0,
+        limit: 100,
+      },
+    );
+  });
+
+  it('queryRows sends preview_table_config for ai_agent preview', () => {
+    const { api, post } = createApi();
+    const previewTableConfig = {
+      table_id: 'tbl-1',
+      permissions: {
+        query_rows_permission: {
+          enabled: true,
+          columns_keys: ['phone'],
+          query_columns: [{ column_key: 'phone', enable_fuzzy_query: true }],
+        },
+      },
+    };
+
+    api.queryRows('ai_agent', 'Orders', [{ columnName: 'Phone', value: '138' }], 0, 20, previewTableConfig);
+
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/query/',
+      {
+        page_id: 'ai_agent',
+        table_name: 'Orders',
+        conditions: [{ columnName: 'Phone', value: '138' }],
+        start: 0,
+        limit: 20,
+        preview_table_config: previewTableConfig,
+      },
+    );
+  });
+});
+
 describe('HTMLPageAPI.listRows', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -91,6 +147,26 @@ describe('HTMLPageAPI.listRows', () => {
           table_name: 'TableName',
           start: undefined,
           limit: undefined,
+        },
+      },
+    );
+  });
+
+  it('listRows serializes preview_table_config', () => {
+    const { api, get } = createApi();
+    const previewTableConfig = { table_id: 'tbl-1', permissions: {} };
+
+    api.listRows('ai_agent', 'TableName', 0, 100, previewTableConfig);
+
+    expect(get).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/',
+      {
+        params: {
+          page_id: 'ai_agent',
+          table_name: 'TableName',
+          start: 0,
+          limit: 100,
+          preview_table_config: JSON.stringify(previewTableConfig),
         },
       },
     );
@@ -270,6 +346,52 @@ describe('HTMLPageAPI.deleteRows(s)', () => {
         },
       },
     );
+  });
+
+  it('write APIs send preview_table_config', () => {
+    const { api, post, put, del } = createApi();
+    const previewTableConfig = { table_id: 'tbl-1', permissions: {} };
+
+    api.addRow('ai_agent', 'TableName', { Name: 'A' }, previewTableConfig);
+    api.addRows('ai_agent', 'TableName', [{ Name: 'B' }], previewTableConfig);
+    api.updateRow('ai_agent', 'TableName', 'row-1', { Name: 'C' }, previewTableConfig);
+    api.updateRows('ai_agent', 'TableName', [{ row_id: 'row-1', row: { Name: 'D' } }], previewTableConfig);
+    api.deleteRows('ai_agent', 'TableName', ['row-1'], previewTableConfig);
+
+    expect(post).toHaveBeenNthCalledWith(1, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'TableName',
+      row_data: { Name: 'A' },
+      preview_table_config: previewTableConfig,
+    });
+    expect(post).toHaveBeenNthCalledWith(2, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'TableName',
+      rows_data: [{ Name: 'B' }],
+      preview_table_config: previewTableConfig,
+    });
+    expect(put).toHaveBeenNthCalledWith(1, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'TableName',
+      row_id: 'row-1',
+      row_data: { Name: 'C' },
+      preview_table_config: previewTableConfig,
+    }, expect.any(Object));
+    expect(put).toHaveBeenNthCalledWith(2, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'TableName',
+      rows_data: [{ row_id: 'row-1', row: { Name: 'D' } }],
+      preview_table_config: previewTableConfig,
+    }, expect.any(Object));
+    expect(del).toHaveBeenCalledWith(expect.any(String), {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        page_id: 'ai_agent',
+        table_name: 'TableName',
+        rows_ids: ['row-1'],
+        preview_table_config: previewTableConfig,
+      },
+    });
   });
 });
 

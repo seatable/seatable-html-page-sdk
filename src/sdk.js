@@ -21,6 +21,10 @@ export class HTMLPageSDK {
     if (!this.options.pageId) {
       this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
     }
+    if (this.options.pageId === 'ai_agent' && !Array.isArray(this.options.previewTableConfigs)) {
+      const previewTableConfigs = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PREVIEW_TABLE_CONFIGS);
+      this.options.previewTableConfigs = Array.isArray(previewTableConfigs) ? previewTableConfigs : [];
+    }
     if (this.options.accountToken) {
       // dev: try to get access-token via accountToken
       const { server, accountToken, appUuid } = this.options;
@@ -35,7 +39,23 @@ export class HTMLPageSDK {
   }
 
   listRows({ tableName, start, limit }) {
-    return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.listRows(this.options.pageId, tableName, start, limit, previewTableConfig);
+  }
+
+  queryRows({ tableName, conditions, start, limit }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.queryRows(this.options.pageId, tableName, conditions, start, limit, previewTableConfig);
+  }
+
+  _getPreviewTableConfig({ tableName }) {
+    if (this.options.pageId !== 'ai_agent' || !Array.isArray(this.options.previewTableConfigs)) return undefined;
+    const tableConfig = this.options.previewTableConfigs.find(config => tableName && config?.table_name === tableName);
+    if (!tableConfig) return undefined;
+    return {
+      table_id: tableConfig.table_id,
+      permissions: { ...(tableConfig.permissions || {}) },
+    };
   }
 
   listCollaborators() {
@@ -47,11 +67,13 @@ export class HTMLPageSDK {
   }
 
   addRow({ tableName, rowData }) {
-    return this.htmlPageAPI.addRow(this.options.pageId, tableName, rowData);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.addRow(this.options.pageId, tableName, rowData, previewTableConfig);
   }
 
   updateRow({ tableName, rowId, rowData }) {
-    return this.htmlPageAPI.updateRow(this.options.pageId, tableName, rowId, rowData);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.updateRow(this.options.pageId, tableName, rowId, rowData, previewTableConfig);
   }
 
   deleteRow({ tableName, rowId }) {
@@ -60,15 +82,18 @@ export class HTMLPageSDK {
   }
 
   batchAddRows({ tableName, rowsData }) {
-    return this.htmlPageAPI.addRows(this.options.pageId, tableName, rowsData);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.addRows(this.options.pageId, tableName, rowsData, previewTableConfig);
   }
 
   batchUpdateRows({ tableName, rowsData }) {
-    return this.htmlPageAPI.updateRows(this.options.pageId, tableName, rowsData);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.updateRows(this.options.pageId, tableName, rowsData, previewTableConfig);
   }
 
   batchDeleteRows({ tableName, rowsIds }) {
-    return this.htmlPageAPI.deleteRows(this.options.pageId, tableName, rowsIds);
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.deleteRows(this.options.pageId, tableName, rowsIds, previewTableConfig);
   }
 
   uploadFile({ file }) {

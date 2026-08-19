@@ -1,6 +1,7 @@
 import { HTMLPageSDK } from '../src/sdk';
 
 const mockListRows = jest.fn();
+const mockQueryRows = jest.fn();
 const mockListCollaborators = jest.fn();
 const mockResolveUsers = jest.fn();
 const mockAddRow = jest.fn();
@@ -19,6 +20,7 @@ jest.mock('../src/iframe-adapter', () => ({
     GET_ACCESS_TOKEN: 'get_access_token',
     GET_APP_UUID: 'get_app_uuid',
     GET_PAGE_ID: 'get_page_id',
+    GET_PREVIEW_TABLE_CONFIGS: 'get_preview_table_configs',
   },
 }));
 
@@ -55,7 +57,93 @@ describe('rows', () => {
     });
 
     expect(result).toBe(response);
-    expect(mockListRows).toHaveBeenCalledWith('page-1', 'TableName', 0, 100);
+    expect(mockListRows).toHaveBeenCalledWith('page-1', 'TableName', 0, 100, undefined);
+  });
+
+  it('query rows by table and column names', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = { queryRows: mockQueryRows };
+
+    const conditions = [{ columnName: 'Order Number', value: 'TEST2026070001' }];
+    sdk.queryRows({ tableName: 'Order', conditions });
+
+    expect(mockQueryRows).toHaveBeenCalledWith('page-1', 'Order', conditions, undefined, undefined, undefined);
+  });
+
+  it('query rows includes the configured table permissions for ai_agent preview', () => {
+    const previewTableConfig = {
+      table_id: 'REW7',
+      table_name: 'Order',
+      permissions: {
+        query_rows_permission: {
+          enabled: true,
+          columns_keys: ['0000', 'wbyd'],
+          query_columns: [{ column_key: '0000', enable_fuzzy_query: true, case_sensitive: false }],
+        },
+      },
+    };
+    const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
+    sdk.htmlPageAPI = { queryRows: mockQueryRows };
+
+    const conditions = [{ columnName: 'Order Number', value: '202607' }];
+    sdk.queryRows({ tableName: 'Order', conditions });
+
+    expect(mockQueryRows).toHaveBeenCalledWith(
+      'ai_agent',
+      'Order',
+      conditions,
+      undefined,
+      undefined,
+      {
+        table_id: 'REW7',
+        permissions: previewTableConfig.permissions,
+      },
+    );
+  });
+
+  it('row APIs include the matching table permissions for ai_agent preview', () => {
+    const previewTableConfig = {
+      table_id: 'REW7',
+      table_name: 'Order',
+      permissions: {
+        view_rows_permission: { enabled: true, columns_keys: ['0000'] },
+        add_rows_permission: { enabled: true, columns_keys: ['0000'] },
+        edit_rows_permission: { enabled: true, columns_keys: ['0000'] },
+        delete_rows_permission: { enabled: true },
+      },
+    };
+    const expectedConfig = {
+      table_id: 'REW7',
+      permissions: previewTableConfig.permissions,
+    };
+    const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
+    sdk.htmlPageAPI = {
+      listRows: mockListRows,
+      addRow: mockAddRow,
+      updateRow: mockUpdateRow,
+      deleteRows: mockDeleteRows,
+      addRows: mockAddRows,
+      updateRows: mockUpdateRows,
+    };
+
+    sdk.listRows({ tableName: 'Order' });
+    sdk.addRow({ tableName: 'Order', rowData: { OrderNumber: '001' } });
+    sdk.updateRow({ tableName: 'Order', rowId: 'row-1', rowData: { OrderNumber: '002' } });
+    sdk.batchAddRows({ tableName: 'Order', rowsData: [{ OrderNumber: '003' }] });
+    sdk.batchUpdateRows({ tableName: 'Order', rowsData: [{ row_id: 'row-1', row: { OrderNumber: '004' } }] });
+    sdk.batchDeleteRows({ tableName: 'Order', rowsIds: ['row-1'] });
+
+    expect(mockListRows).toHaveBeenCalledWith('ai_agent', 'Order', undefined, undefined, expectedConfig);
+    expect(mockAddRow).toHaveBeenCalledWith('ai_agent', 'Order', { OrderNumber: '001' }, expectedConfig);
+    expect(mockUpdateRow).toHaveBeenCalledWith('ai_agent', 'Order', 'row-1', { OrderNumber: '002' }, expectedConfig);
+    expect(mockAddRows).toHaveBeenCalledWith('ai_agent', 'Order', [{ OrderNumber: '003' }], expectedConfig);
+    expect(mockUpdateRows).toHaveBeenCalledWith(
+      'ai_agent',
+      'Order',
+      [{ row_id: 'row-1', row: { OrderNumber: '004' } }],
+      expectedConfig,
+    );
+    expect(mockDeleteRows).toHaveBeenCalledWith('ai_agent', 'Order', ['row-1'], expectedConfig);
   });
 
   it('list collaborators', () => {
@@ -121,11 +209,11 @@ describe('rows', () => {
     expect(sdk.batchUpdateRows({ tableName: 'TableName', rowsData: [{ row_id: 'row-1', Name: 'Jane' }] })).toEqual(updateRowsResponse);
     expect(sdk.batchDeleteRows({ tableName: 'TableName', rowsIds: ['row-1'] })).toEqual(deleteRowsResponse);
 
-    expect(mockAddRow).toHaveBeenCalledWith('page-1', 'TableName', { Name: 'John' });
-    expect(mockUpdateRow).toHaveBeenCalledWith('page-1', 'TableName', 'row-1', { Name: 'Jane' });
-    expect(mockDeleteRows).toHaveBeenCalledWith('page-1', 'TableName', ['row-1']);
-    expect(mockAddRows).toHaveBeenCalledWith('page-1', 'TableName', [{ Name: 'John' }]);
-    expect(mockUpdateRows).toHaveBeenCalledWith('page-1', 'TableName', [{ row_id: 'row-1', Name: 'Jane' }]);
+    expect(mockAddRow).toHaveBeenCalledWith('page-1', 'TableName', { Name: 'John' }, undefined);
+    expect(mockUpdateRow).toHaveBeenCalledWith('page-1', 'TableName', 'row-1', { Name: 'Jane' }, undefined);
+    expect(mockDeleteRows).toHaveBeenCalledWith('page-1', 'TableName', ['row-1'], undefined);
+    expect(mockAddRows).toHaveBeenCalledWith('page-1', 'TableName', [{ Name: 'John' }], undefined);
+    expect(mockUpdateRows).toHaveBeenCalledWith('page-1', 'TableName', [{ row_id: 'row-1', Name: 'Jane' }], undefined);
     expect(mockDeleteRows).toHaveBeenCalledTimes(2);
   });
 });

@@ -13,6 +13,12 @@ export const POST_MESSAGE_REQUEST_TYPE = {
   GET_PREVIEW_TABLE_CONFIGS: 'get_preview_table_configs',
 };
 
+const BOOTSTRAP_REQUEST_TYPES = new Set([
+  POST_MESSAGE_REQUEST_TYPE.GET_SERVER,
+  POST_MESSAGE_REQUEST_TYPE.GET_ACCESS_TOKEN,
+  POST_MESSAGE_REQUEST_TYPE.GET_APP_UUID,
+]);
+
 const WINDOW_EVENT_SOURCE_TYPE = {
   APP: 'app',
   IFRAME: 'iframe',
@@ -25,6 +31,20 @@ const INTERACTIVE_TAGS = ['SELECT', 'INPUT', 'TEXTAREA', 'BUTTON'];
 
 const hasOwnProperty = (obj, key) => {
   return Object.prototype.hasOwnProperty.call(obj, key);
+};
+
+const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const normalizeOrigin = (origin) => {
+  if (typeof origin !== 'string' || !origin) return null;
+
+  try {
+    const url = new URL(origin);
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin === 'null') return null;
+    return url.origin;
+  } catch (error) {
+    return null;
+  }
 };
 
 const generatorBase64Code = (keyLength = 4) => {
@@ -77,10 +97,11 @@ export class IframeAdapter {
   constructor(options) {
     this.options = options || {};
     this.selfWindow = window.parent === window.self;
-    this.targetOrigin = this.options.targetOrigin || '*';
+    this.targetOrigin = null;
     this.pendingRequests = {};
     this.eventHandlers = {};
     this.timeout = this.options.timeout || 10000;
+    this._handleMessage = this.handleMessage.bind(this);
     this.setupMessageListener();
   }
 
@@ -94,12 +115,20 @@ export class IframeAdapter {
 
   setupMessageListener() {
     if (this.selfWindow) return;
-    window.addEventListener('message', this.handleMessage.bind(this));
+    window.addEventListener('message', this._handleMessage);
     this.setEventsListener();
   }
 
+  setTargetOrigin(origin) {
+    const targetOrigin = normalizeOrigin(origin);
+    if (!targetOrigin) {
+      throw new Error('Invalid trusted target origin');
+    }
+    this.targetOrigin = targetOrigin;
+  }
+
   postWindowEvent(eventData) {
-    if (!eventData) return;
+    if (!eventData || !this.targetOrigin) return;
     window.parent.postMessage({
       type: POST_MESSAGE_TYPE.WINDOW_EVENT,
       params: {
@@ -153,23 +182,39 @@ export class IframeAdapter {
   }
 
   async request(method, params) {
-    if (this.selfWindow) {
-      return new Promise((resolve) => {
-        resolve(null);
-      });
+    if (this.selfWindow) return null;
+    if (!this.targetOrigin) {
+      throw new Error('Trusted target origin has not been configured');
     }
+    return this._request(method, params, this.targetOrigin);
+  }
+
+  async bootstrapRequest(method, params) {
+    if (this.selfWindow) return null;
+
+    // Initial server, access-token, and app-UUID requests run before the trusted
+    // parent origin is known. Responses still have to originate from window.parent
+    // and match the generated request ID. All later traffic requires the configured origin.
+    if (this.targetOrigin) {
+      return this._request(method, params, this.targetOrigin);
+    }
+    if (!BOOTSTRAP_REQUEST_TYPES.has(method)) {
+      throw new Error(`Unsupported bootstrap request: ${method}`);
+    }
+    return this._request(method, params, '*');
+  }
+
+  _request(method, params, targetOrigin) {
     const requestId = this.generatorRequestId();
     return new Promise((resolve, reject) => {
-      this.pendingRequests[requestId] = { resolve, reject };
+      this.pendingRequests[requestId] = { resolve, reject, targetOrigin };
       window.parent.postMessage({
         type: POST_MESSAGE_TYPE.HTML_PAGE_REQUEST,
         requestId,
         method,
         params
-      }, this.targetOrigin);
+      }, targetOrigin);
 
-      // request timeout
-      // reject and clear the pending request
       const timeoutId = setTimeout(() => {
         if (hasOwnProperty(this.pendingRequests, requestId)) {
           delete this.pendingRequests[requestId];
@@ -177,7 +222,6 @@ export class IframeAdapter {
         }
       }, this.timeout);
 
-      // save timeoutId for the pending request
       const pending = this.pendingRequests[requestId];
       if (pending) {
         pending.timeoutId = timeoutId;
@@ -185,19 +229,43 @@ export class IframeAdapter {
     });
   }
 
+  isMessageFromParent(event) {
+    return event && event.source === window.parent;
+  }
+
+  isTrustedMessage(event) {
+    return Boolean(this.targetOrigin && this.isMessageFromParent(event) && event.origin === this.targetOrigin);
+  }
+
+  isExpectedResponse(event, pending) {
+    // Bootstrap responses may come from any origin because the trusted origin is
+    // not known yet, but every response must come from window.parent. After
+    // bootstrap, the response origin must match the origin used for the request.
+    if (!this.isMessageFromParent(event)) return false;
+    return pending.targetOrigin === '*' || event.origin === pending.targetOrigin;
+  }
+
   handleMessage(event) {
+    if (!isObject(event?.data)) return;
+
     const { type, requestId, data, error, eventType, payload } = event.data;
     if (type === POST_MESSAGE_TYPE.HTML_PAGE_RESPONSE) {
       const pending = this.pendingRequests[requestId];
-      if (pending) {
-        clearTimeout(pending.timeoutId);
-        delete this.pendingRequests[requestId];
-        if (error) {
-          pending.reject(new Error(error));
-        } else {
+      if (!pending || !this.isExpectedResponse(event, pending)) return;
+
+      clearTimeout(pending.timeoutId);
+      delete this.pendingRequests[requestId];
+      if (error) {
+        pending.reject(new Error(error));
+      } else {
+        try {
           pending.resolve(data ? JSON.parse(data) : null);
+        } catch (parseError) {
+          pending.reject(new Error('Invalid response payload'));
         }
       }
+    } else if (!this.isTrustedMessage(event)) {
+      return;
     } else if (type === POST_MESSAGE_TYPE.HTML_PAGE_EVENT) {
       this.emitEvent(eventType, payload);
     } else if (type === POST_MESSAGE_TYPE.WINDOW_EVENT) {
@@ -289,7 +357,7 @@ export class IframeAdapter {
   }
 
   destroy() {
-    this.pendingRequests.forEach(pending => {
+    Object.values(this.pendingRequests).forEach(pending => {
       clearTimeout(pending.timeoutId);
       pending.reject(new Error('Adapter destroyed'));
     });

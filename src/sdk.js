@@ -1,41 +1,70 @@
 import HTMLPageAPI from './apis/html-page-api';
 import { IframeAdapter, POST_MESSAGE_REQUEST_TYPE } from './iframe-adapter';
 
+const AI_AGENT_PAGE_ID = 'ai_agent';
+
 export class HTMLPageSDK {
   constructor(options) {
-    this.options = options || {};
-    this.iframeAdapter = new IframeAdapter(options);
+    const sdkOptions = { ...(options || {}) };
+    delete sdkOptions.accessToken;
+    this.options = sdkOptions;
+    this.iframeAdapter = new IframeAdapter(sdkOptions);
   }
 
   async init() {
-    if (!this.options) {
-      this.options = {};
-    }
     this.htmlPageAPI = new HTMLPageAPI();
-    if (!this.options.server) {
-      this.options.server = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_SERVER);
+    if (Object.prototype.hasOwnProperty.call(this.options, 'accountToken')) {
+      await this._initDevelopment();
+      return;
     }
-    if (!this.options.appUuid) {
-      this.options.appUuid = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_APP_UUID);
+    await this._initProduction();
+  }
+
+  async _initDevelopment() {
+    const server = this._normalizeServer(this.options.server);
+    if (!server) {
+      throw new Error('Missing server configuration');
     }
-    if (!this.options.pageId) {
-      this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
+
+    this.options.server = server;
+    const { accountToken, appUuid } = this.options;
+    await this.htmlPageAPI.initWithAccountToken({ server, accountToken, appUuid });
+
+    const accessToken = this.htmlPageAPI.accessToken;
+    this.htmlPageAPI.init({ server, accessToken, appUuid });
+  }
+
+  async _initProduction() {
+    const server = this._normalizeServer(
+      await this.iframeAdapter.bootstrapRequest(POST_MESSAGE_REQUEST_TYPE.GET_SERVER)
+    );
+    if (!server) {
+      throw new Error('Missing server configuration');
     }
-    if (this.options.pageId === 'ai_agent' && !Array.isArray(this.options.previewTableConfigs)) {
+    this.options.server = server;
+
+    const accessToken = await this.iframeAdapter.bootstrapRequest(POST_MESSAGE_REQUEST_TYPE.GET_ACCESS_TOKEN);
+    const appUuid = await this.iframeAdapter.bootstrapRequest(POST_MESSAGE_REQUEST_TYPE.GET_APP_UUID);
+    this.options.appUuid = appUuid;
+    await this._configureTrustedOrigin({ server, accessToken, appUuid });
+
+    this.options.pageId = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PAGE_ID);
+    if (this.options.pageId === AI_AGENT_PAGE_ID) {
       const previewTableConfigs = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_PREVIEW_TABLE_CONFIGS);
       this.options.previewTableConfigs = Array.isArray(previewTableConfigs) ? previewTableConfigs : [];
     }
-    if (this.options.accountToken) {
-      // dev: try to get access-token via accountToken
-      const { server, accountToken, appUuid } = this.options;
-      await this.htmlPageAPI.initWithAccountToken({ server, accountToken, appUuid });
-    } else {
-      if (!this.options.accessToken) {
-        this.options.accessToken = await this.iframeAdapter.request(POST_MESSAGE_REQUEST_TYPE.GET_ACCESS_TOKEN);
-      }
-      const { server, accessToken, appUuid } = this.options;
-      this.htmlPageAPI.init({ server, accessToken, appUuid });
-    }
+
+    this.htmlPageAPI.init({ server, accessToken, appUuid: this.options.appUuid });
+  }
+
+  async _configureTrustedOrigin({ server, accessToken, appUuid }) {
+    const parentOrigin = await this.htmlPageAPI.getParentOrigin({ server, accessToken, appUuid });
+    this.iframeAdapter.setTargetOrigin(parentOrigin);
+  }
+
+  _normalizeServer(server) {
+    if (!server) return '';
+    return server.endsWith('/') ? server : `${server}/`;
   }
 
   listRows({ tableName, start, limit }) {
@@ -49,7 +78,7 @@ export class HTMLPageSDK {
   }
 
   _getPreviewTableConfig({ tableName }) {
-    if (this.options.pageId !== 'ai_agent' || !Array.isArray(this.options.previewTableConfigs)) return undefined;
+    if (this.options.pageId !== AI_AGENT_PAGE_ID || !Array.isArray(this.options.previewTableConfigs)) return undefined;
     const tableConfig = this.options.previewTableConfigs.find(config => tableName && config?.table_name === tableName);
     if (!tableConfig) return undefined;
     return {

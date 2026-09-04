@@ -198,6 +198,33 @@ describe('HTMLPageAPI.listCollaborators', () => {
 
 });
 
+describe('HTMLPageAPI.getCurrentUser', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('gets the current user', () => {
+    const { api, get } = createApi();
+    const response = {
+      data: {
+        username: 'user@example.com',
+        name: 'User',
+        user_id: 'EMP-001',
+        avatar_url: 'https://example.com/avatar.png',
+        role_id: 7,
+      },
+    };
+    get.mockReturnValue(response);
+
+    const result = api.getCurrentUser();
+
+    expect(result).toEqual(response);
+    expect(get).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/current-user/',
+    );
+  });
+});
+
 describe('HTMLPageAPI.resolveUsers', () => {
   beforeEach(() => {
     jest.clearAllMocks();

@@ -91,6 +91,11 @@ class HTMLPageAPI {
     return this.req.get(url);
   }
 
+  getCurrentUser() {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/current-user/`;
+    return this.req.get(url);
+  }
+
   resolveUsers(user_ids) {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-users/resolve/`;
     const data = { user_ids };

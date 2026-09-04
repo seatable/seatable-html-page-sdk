@@ -91,6 +91,10 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.listCollaborators();
   }
 
+  getCurrentUser() {
+    return this.htmlPageAPI.getCurrentUser();
+  }
+
   resolveUsers({ userIds } = {}) {
     return this.htmlPageAPI.resolveUsers(userIds);
   }

@@ -3,6 +3,7 @@ import { HTMLPageSDK } from '../src/sdk';
 const mockListRows = jest.fn();
 const mockQueryRows = jest.fn();
 const mockListCollaborators = jest.fn();
+const mockGetCurrentUser = jest.fn();
 const mockResolveUsers = jest.fn();
 const mockAddRow = jest.fn();
 const mockUpdateRow = jest.fn();
@@ -28,6 +29,7 @@ jest.mock('../src/apis/html-page-api', () => {
   return jest.fn().mockImplementation(() => ({
     listRows: mockListRows,
     listCollaborators: mockListCollaborators,
+    getCurrentUser: mockGetCurrentUser,
     resolveUsers: mockResolveUsers,
     addRow: mockAddRow,
     updateRow: mockUpdateRow,
@@ -157,6 +159,27 @@ describe('rows', () => {
 
     expect(result).toBe(response);
     expect(mockListCollaborators).toHaveBeenCalledWith();
+  });
+
+  it('gets the current user', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = { getCurrentUser: mockGetCurrentUser };
+
+    const response = {
+      data: {
+        username: 'user@example.com',
+        name: 'User',
+        user_id: 'EMP-001',
+        avatar_url: 'https://example.com/avatar.png',
+        role_id: 7,
+      },
+    };
+    mockGetCurrentUser.mockReturnValue(response);
+
+    const result = sdk.getCurrentUser();
+
+    expect(result).toBe(response);
+    expect(mockGetCurrentUser).toHaveBeenCalledWith();
   });
 
   it('resolve users', () => {

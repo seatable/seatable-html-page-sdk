@@ -80,6 +80,9 @@ const rows = await sdk.listRows({
   limit: 100,
 });
 
+// Get the signed-in universal-app user
+const currentUser = await sdk.getCurrentUser();
+
 // Add a new row
 await sdk.addRow({
   tableName: "TableName",

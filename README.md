@@ -88,34 +88,6 @@ await sdk.addRow({
   tableName: "TableName",
   rowData: { Name: "John", Age: 30 },
 });
-
-
-// Add or delete one linked record in a link-column cell
-await sdk.addLink({
-  tableName: "Tasks",
-  rowId: "task-row-1",
-  linkColumnName: "Related projects",
-  otherRowId: "project-row-1",
-});
-await sdk.deleteLink({
-  tableName: "Tasks",
-  rowId: "task-row-1",
-  linkColumnName: "Related projects",
-  otherRowId: "project-row-1",
-});
-
-// Add or delete linked records for multiple rows/link columns
-const linksData = [
-  {
-    row_id: "task-row-1",
-    links: {
-      "Related projects": ["project-row-1", "project-row-2"],
-      "Related customers": ["customer-row-1"],
-    },
-  },
-];
-await sdk.batchAddLinks({ tableName: "Tasks", linksData });
-await sdk.batchDeleteLinks({ tableName: "Tasks", linksData });
 ```
 
 ## Testing

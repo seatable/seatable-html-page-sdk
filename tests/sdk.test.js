@@ -268,22 +268,51 @@ describe('links', () => {
         links: { 'Related projects': ['project-row-1', 'project-row-2'] },
       },
     ];
+    const addedRow = {
+      _id: 'task-row-1',
+      'Related projects': [{ row_id: 'project-row-1', display_value: 'Project 1' }],
+    };
+    const deletedRow = { _id: 'task-row-1', 'Related projects': [] };
+    const addedRows = [{
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    }];
+    const deletedRows = [{ _id: 'task-row-1', 'Related projects': [] }];
+    const addResponse = { data: { success: true, row: addedRow } };
+    const deleteResponse = { data: { success: true, row: deletedRow } };
+    const batchAddResponse = { data: { success: true, rows: addedRows } };
+    const batchDeleteResponse = { data: { success: true, rows: deletedRows } };
+    mockAddLink.mockReturnValue(addResponse);
+    mockDeleteLink.mockReturnValue(deleteResponse);
+    mockAddLinks.mockReturnValue(batchAddResponse);
+    mockDeleteLinks.mockReturnValue(batchDeleteResponse);
 
-    sdk.addLink({
+    const addResult = sdk.addLink({
       tableName: 'Tasks',
       rowId: 'task-row-1',
       linkColumnName: 'Related projects',
       otherRowId: 'project-row-1',
     });
-    sdk.deleteLink({
+    const deleteResult = sdk.deleteLink({
       tableName: 'Tasks',
       rowId: 'task-row-1',
       linkColumnName: 'Related projects',
       otherRowId: 'project-row-1',
     });
-    sdk.batchAddLinks({ tableName: 'Tasks', linksData });
-    sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
+    const batchAddResult = sdk.batchAddLinks({ tableName: 'Tasks', linksData });
+    const batchDeleteResult = sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
 
+    expect(addResult).toBe(addResponse);
+    expect(addResult.data.row).toEqual(addedRow);
+    expect(deleteResult).toBe(deleteResponse);
+    expect(deleteResult.data.row).toEqual(deletedRow);
+    expect(batchAddResult).toBe(batchAddResponse);
+    expect(batchAddResult.data.rows).toEqual(addedRows);
+    expect(batchDeleteResult).toBe(batchDeleteResponse);
+    expect(batchDeleteResult.data.rows).toEqual(deletedRows);
     expect(mockAddLink).toHaveBeenCalledWith(
       'page-1',
       'Tasks',

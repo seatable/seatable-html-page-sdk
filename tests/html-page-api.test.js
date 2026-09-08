@@ -428,9 +428,15 @@ describe('HTMLPageAPI link operations', () => {
     jest.clearAllMocks();
   });
 
-  it('adds a link to a link-column cell', () => {
+  it('adds a link and returns the updated row', () => {
     const { api, post } = createApi();
-    const response = { data: { success: true } };
+    const updatedRow = {
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+      ],
+    };
+    const response = { data: { success: true, row: updatedRow } };
     post.mockReturnValue(response);
 
     const result = api.addLink(
@@ -442,6 +448,7 @@ describe('HTMLPageAPI link operations', () => {
     );
 
     expect(result).toBe(response);
+    expect(result.data.row).toEqual(updatedRow);
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/',
       {
@@ -454,9 +461,10 @@ describe('HTMLPageAPI link operations', () => {
     );
   });
 
-  it('deletes a link from a link-column cell', () => {
+  it('deletes a link and returns the updated row', () => {
     const { api, del } = createApi();
-    const response = { data: { success: true } };
+    const updatedRow = { _id: 'task-row-1', 'Related projects': [] };
+    const response = { data: { success: true, row: updatedRow } };
     del.mockReturnValue(response);
 
     const result = api.deleteLink(
@@ -468,6 +476,7 @@ describe('HTMLPageAPI link operations', () => {
     );
 
     expect(result).toBe(response);
+    expect(result.data.row).toEqual(updatedRow);
     expect(del).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/',
       {
@@ -483,7 +492,7 @@ describe('HTMLPageAPI link operations', () => {
     );
   });
 
-  it('adds and deletes links in batch', () => {
+  it('adds and deletes links in batch and returns the updated rows', () => {
     const { api, post, del } = createApi();
     const linksData = [
       {
@@ -493,10 +502,26 @@ describe('HTMLPageAPI link operations', () => {
         },
       },
     ];
+    const addedRows = [{
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    }];
+    const deletedRows = [{ _id: 'task-row-1', 'Related projects': [] }];
+    const addResponse = { data: { success: true, rows: addedRows } };
+    const deleteResponse = { data: { success: true, rows: deletedRows } };
+    post.mockReturnValue(addResponse);
+    del.mockReturnValue(deleteResponse);
 
-    api.addLinks('page-1', 'Tasks', linksData);
-    api.deleteLinks('page-1', 'Tasks', linksData);
+    const addResult = api.addLinks('page-1', 'Tasks', linksData);
+    const deleteResult = api.deleteLinks('page-1', 'Tasks', linksData);
 
+    expect(addResult).toBe(addResponse);
+    expect(addResult.data.rows).toEqual(addedRows);
+    expect(deleteResult).toBe(deleteResponse);
+    expect(deleteResult.data.rows).toEqual(deletedRows);
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/batch/',
       {

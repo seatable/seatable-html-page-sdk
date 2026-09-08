@@ -329,8 +329,10 @@ describe('HTMLPageAPI.updateRow(s)', () => {
     const { api, put } = createApi();
     const rowsData = [{ row_id: 'row-1', Name: 'Jane' }];
     const response = {
-      data: { success: true },
-      rows: [{ row_id: 'row-1', '0000': 'Jane' }],
+      data: {
+        success: true,
+        rows: [{ _id: 'row-1', '0000': 'Jane' }],
+      },
     };
     put.mockReturnValue(response);
 
@@ -343,6 +345,90 @@ describe('HTMLPageAPI.updateRow(s)', () => {
       {
         page_id: 'page-1',
         table_name: 'TableName',
+        rows_data: rowsData,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  });
+
+  it('updateRow sends link-column row ids and returns expanded link values', () => {
+    const { api, put } = createApi();
+    const rowData = {
+      Name: 'Updated task',
+      'Related projects': ['project-row-1', 'project-row-2'],
+    };
+    const updatedRow = {
+      _id: 'task-row-1',
+      Name: 'Updated task',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    };
+    const response = { data: { success: true, row: updatedRow } };
+    put.mockReturnValue(response);
+
+    const result = api.updateRow('page-1', 'Tasks', 'task-row-1', rowData);
+
+    expect(result.data.row).toEqual(updatedRow);
+    expect(put).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
+        row_id: 'task-row-1',
+        row_data: rowData,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  });
+
+  it('updateRows sends link-column row ids and returns expanded link values', () => {
+    const { api, put } = createApi();
+    const rowsData = [
+      {
+        row_id: 'task-row-1',
+        row: {
+          Name: 'Updated task 1',
+          'Related projects': ['project-row-1', 'project-row-2'],
+        },
+      },
+      {
+        row_id: 'task-row-2',
+        row: {
+          'Related projects': [],
+        },
+      },
+    ];
+    const updatedRows = [
+      {
+        _id: 'task-row-1',
+        Name: 'Updated task 1',
+        'Related projects': [
+          { row_id: 'project-row-1', display_value: 'Project 1' },
+          { row_id: 'project-row-2', display_value: 'Project 2' },
+        ],
+      },
+      {
+        _id: 'task-row-2',
+        'Related projects': [],
+      },
+    ];
+    const response = { data: { success: true, rows: updatedRows } };
+    put.mockReturnValue(response);
+
+    const result = api.updateRows('page-1', 'Tasks', rowsData);
+
+    expect(result.data.rows).toEqual(updatedRows);
+    expect(put).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/batch/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
         rows_data: rowsData,
       },
       {

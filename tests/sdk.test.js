@@ -10,6 +10,10 @@ const mockUpdateRow = jest.fn();
 const mockDeleteRows = jest.fn();
 const mockAddRows = jest.fn();
 const mockUpdateRows = jest.fn();
+const mockAddLink = jest.fn();
+const mockDeleteLink = jest.fn();
+const mockAddLinks = jest.fn();
+const mockDeleteLinks = jest.fn();
 const mockUpload = jest.fn();
 
 jest.mock('../src/iframe-adapter', () => ({
@@ -36,6 +40,10 @@ jest.mock('../src/apis/html-page-api', () => {
     deleteRows: mockDeleteRows,
     addRows: mockAddRows,
     updateRows: mockUpdateRows,
+    addLink: mockAddLink,
+    deleteLink: mockDeleteLink,
+    addLinks: mockAddLinks,
+    deleteLinks: mockDeleteLinks,
     upload: mockUpload,
   }));
 });
@@ -238,6 +246,108 @@ describe('rows', () => {
     expect(mockAddRows).toHaveBeenCalledWith('page-1', 'TableName', [{ Name: 'John' }], undefined);
     expect(mockUpdateRows).toHaveBeenCalledWith('page-1', 'TableName', [{ row_id: 'row-1', Name: 'Jane' }], undefined);
     expect(mockDeleteRows).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('links', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('delegates single and batch link operations', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = {
+      addLink: mockAddLink,
+      deleteLink: mockDeleteLink,
+      addLinks: mockAddLinks,
+      deleteLinks: mockDeleteLinks,
+    };
+    const linksData = [
+      {
+        row_id: 'task-row-1',
+        links: { 'Related projects': ['project-row-1', 'project-row-2'] },
+      },
+    ];
+
+    sdk.addLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'Related projects',
+      otherRowId: 'project-row-1',
+    });
+    sdk.deleteLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'Related projects',
+      otherRowId: 'project-row-1',
+    });
+    sdk.batchAddLinks({ tableName: 'Tasks', linksData });
+    sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
+
+    expect(mockAddLink).toHaveBeenCalledWith(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+      undefined,
+    );
+    expect(mockDeleteLink).toHaveBeenCalledWith(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+      undefined,
+    );
+    expect(mockAddLinks).toHaveBeenCalledWith('page-1', 'Tasks', linksData, undefined);
+    expect(mockDeleteLinks).toHaveBeenCalledWith('page-1', 'Tasks', linksData, undefined);
+  });
+
+  it('includes the matching table permissions for ai_agent preview', () => {
+    const previewTableConfig = {
+      table_id: 'table-1',
+      table_name: 'Tasks',
+      permissions: {
+        edit_rows_permission: { enabled: true, columns_keys: ['related'] },
+      },
+    };
+    const expectedConfig = {
+      table_id: 'table-1',
+      permissions: previewTableConfig.permissions,
+    };
+    const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
+    sdk.htmlPageAPI = {
+      addLink: mockAddLink,
+      deleteLink: mockDeleteLink,
+      addLinks: mockAddLinks,
+      deleteLinks: mockDeleteLinks,
+    };
+    const linksData = [{ row_id: 'task-row-1', links: { related: ['project-row-1'] } }];
+
+    sdk.addLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'related',
+      otherRowId: 'project-row-1',
+    });
+    sdk.deleteLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'related',
+      otherRowId: 'project-row-1',
+    });
+    sdk.batchAddLinks({ tableName: 'Tasks', linksData });
+    sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
+
+    expect(mockAddLink).toHaveBeenCalledWith(
+      'ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', expectedConfig,
+    );
+    expect(mockDeleteLink).toHaveBeenCalledWith(
+      'ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', expectedConfig,
+    );
+    expect(mockAddLinks).toHaveBeenCalledWith('ai_agent', 'Tasks', linksData, expectedConfig);
+    expect(mockDeleteLinks).toHaveBeenCalledWith('ai_agent', 'Tasks', linksData, expectedConfig);
   });
 });
 

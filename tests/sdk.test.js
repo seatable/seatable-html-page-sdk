@@ -10,6 +10,10 @@ const mockUpdateRow = jest.fn();
 const mockDeleteRows = jest.fn();
 const mockAddRows = jest.fn();
 const mockUpdateRows = jest.fn();
+const mockAddLink = jest.fn();
+const mockDeleteLink = jest.fn();
+const mockAddLinks = jest.fn();
+const mockDeleteLinks = jest.fn();
 const mockUpload = jest.fn();
 
 jest.mock('../src/iframe-adapter', () => ({
@@ -36,6 +40,10 @@ jest.mock('../src/apis/html-page-api', () => {
     deleteRows: mockDeleteRows,
     addRows: mockAddRows,
     updateRows: mockUpdateRows,
+    addLink: mockAddLink,
+    deleteLink: mockDeleteLink,
+    addLinks: mockAddLinks,
+    deleteLinks: mockDeleteLinks,
     upload: mockUpload,
   }));
 });
@@ -215,8 +223,10 @@ describe('rows', () => {
       inserted_row_count: 1,
     };
     const updateRowsResponse = {
-      data: { success: true },
-      rows: [{ row_id: 'row-1', '0000': 'Jane' }],
+      data: {
+        success: true,
+        rows: [{ _id: 'row-1', '0000': 'Jane' }],
+      },
     };
 
     mockAddRow.mockReturnValue(addRowResponse);
@@ -229,15 +239,206 @@ describe('rows', () => {
     expect(sdk.updateRow({ tableName: 'TableName', rowId: 'row-1', rowData: { Name: 'Jane' } })).toEqual(updateRowResponse);
     expect(sdk.deleteRow({ tableName: 'TableName', rowId: 'row-1' })).toEqual(deleteRowsResponse);
     expect(sdk.batchAddRows({ tableName: 'TableName', rowsData: [{ Name: 'John' }] })).toEqual(addRowsResponse);
-    expect(sdk.batchUpdateRows({ tableName: 'TableName', rowsData: [{ row_id: 'row-1', Name: 'Jane' }] })).toEqual(updateRowsResponse);
+    expect(sdk.batchUpdateRows({
+      tableName: 'TableName',
+      rowsData: [{ row_id: 'row-1', row: { Name: 'Jane' } }],
+    })).toEqual(updateRowsResponse);
     expect(sdk.batchDeleteRows({ tableName: 'TableName', rowsIds: ['row-1'] })).toEqual(deleteRowsResponse);
 
     expect(mockAddRow).toHaveBeenCalledWith('page-1', 'TableName', { Name: 'John' }, undefined);
     expect(mockUpdateRow).toHaveBeenCalledWith('page-1', 'TableName', 'row-1', { Name: 'Jane' }, undefined);
     expect(mockDeleteRows).toHaveBeenCalledWith('page-1', 'TableName', ['row-1'], undefined);
     expect(mockAddRows).toHaveBeenCalledWith('page-1', 'TableName', [{ Name: 'John' }], undefined);
-    expect(mockUpdateRows).toHaveBeenCalledWith('page-1', 'TableName', [{ row_id: 'row-1', Name: 'Jane' }], undefined);
+    expect(mockUpdateRows).toHaveBeenCalledWith(
+      'page-1',
+      'TableName',
+      [{ row_id: 'row-1', row: { Name: 'Jane' } }],
+      undefined,
+    );
     expect(mockDeleteRows).toHaveBeenCalledTimes(2);
+  });
+
+  it('updateRow and batchUpdateRows support link-column replacements', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = {
+      updateRow: mockUpdateRow,
+      updateRows: mockUpdateRows,
+    };
+    const rowData = {
+      Name: 'Updated task',
+      'Related projects': ['project-row-1', 'project-row-2'],
+    };
+    const rowsData = [
+      {
+        row_id: 'task-row-1',
+        row: rowData,
+      },
+      {
+        row_id: 'task-row-2',
+        row: { 'Related projects': [] },
+      },
+    ];
+    const updatedRow = {
+      _id: 'task-row-1',
+      Name: 'Updated task',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    };
+    const updatedRows = [
+      updatedRow,
+      { _id: 'task-row-2', 'Related projects': [] },
+    ];
+    const updateResponse = { data: { success: true, row: updatedRow } };
+    const batchUpdateResponse = { data: { success: true, rows: updatedRows } };
+    mockUpdateRow.mockReturnValue(updateResponse);
+    mockUpdateRows.mockReturnValue(batchUpdateResponse);
+
+    const result = sdk.updateRow({ tableName: 'Tasks', rowId: 'task-row-1', rowData });
+    const batchResult = sdk.batchUpdateRows({ tableName: 'Tasks', rowsData });
+
+    expect(result.data.row).toEqual(updatedRow);
+    expect(batchResult.data.rows).toEqual(updatedRows);
+    expect(mockUpdateRow).toHaveBeenCalledWith(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      rowData,
+      undefined,
+    );
+    expect(mockUpdateRows).toHaveBeenCalledWith('page-1', 'Tasks', rowsData, undefined);
+  });
+});
+
+describe('links', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('delegates single and batch link operations', () => {
+    const sdk = new HTMLPageSDK({ pageId: 'page-1' });
+    sdk.htmlPageAPI = {
+      addLink: mockAddLink,
+      deleteLink: mockDeleteLink,
+      addLinks: mockAddLinks,
+      deleteLinks: mockDeleteLinks,
+    };
+    const linksData = [
+      {
+        row_id: 'task-row-1',
+        links: { 'Related projects': ['project-row-1', 'project-row-2'] },
+      },
+    ];
+    const addedRow = {
+      _id: 'task-row-1',
+      'Related projects': [{ row_id: 'project-row-1', display_value: 'Project 1' }],
+    };
+    const deletedRow = { _id: 'task-row-1', 'Related projects': [] };
+    const addedRows = [{
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    }];
+    const deletedRows = [{ _id: 'task-row-1', 'Related projects': [] }];
+    const addResponse = { data: { success: true, row: addedRow } };
+    const deleteResponse = { data: { success: true, row: deletedRow } };
+    const batchAddResponse = { data: { success: true, rows: addedRows } };
+    const batchDeleteResponse = { data: { success: true, rows: deletedRows } };
+    mockAddLink.mockReturnValue(addResponse);
+    mockDeleteLink.mockReturnValue(deleteResponse);
+    mockAddLinks.mockReturnValue(batchAddResponse);
+    mockDeleteLinks.mockReturnValue(batchDeleteResponse);
+
+    const addResult = sdk.addLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'Related projects',
+      otherRowId: 'project-row-1',
+    });
+    const deleteResult = sdk.deleteLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'Related projects',
+      otherRowId: 'project-row-1',
+    });
+    const batchAddResult = sdk.batchAddLinks({ tableName: 'Tasks', linksData });
+    const batchDeleteResult = sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
+
+    expect(addResult).toBe(addResponse);
+    expect(addResult.data.row).toEqual(addedRow);
+    expect(deleteResult).toBe(deleteResponse);
+    expect(deleteResult.data.row).toEqual(deletedRow);
+    expect(batchAddResult).toBe(batchAddResponse);
+    expect(batchAddResult.data.rows).toEqual(addedRows);
+    expect(batchDeleteResult).toBe(batchDeleteResponse);
+    expect(batchDeleteResult.data.rows).toEqual(deletedRows);
+    expect(mockAddLink).toHaveBeenCalledWith(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+      undefined,
+    );
+    expect(mockDeleteLink).toHaveBeenCalledWith(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+      undefined,
+    );
+    expect(mockAddLinks).toHaveBeenCalledWith('page-1', 'Tasks', linksData, undefined);
+    expect(mockDeleteLinks).toHaveBeenCalledWith('page-1', 'Tasks', linksData, undefined);
+  });
+
+  it('includes the matching table permissions for ai_agent preview', () => {
+    const previewTableConfig = {
+      table_id: 'table-1',
+      table_name: 'Tasks',
+      permissions: {
+        edit_rows_permission: { enabled: true, columns_keys: ['related'] },
+      },
+    };
+    const expectedConfig = {
+      table_id: 'table-1',
+      permissions: previewTableConfig.permissions,
+    };
+    const sdk = new HTMLPageSDK({ pageId: 'ai_agent', previewTableConfigs: [previewTableConfig] });
+    sdk.htmlPageAPI = {
+      addLink: mockAddLink,
+      deleteLink: mockDeleteLink,
+      addLinks: mockAddLinks,
+      deleteLinks: mockDeleteLinks,
+    };
+    const linksData = [{ row_id: 'task-row-1', links: { related: ['project-row-1'] } }];
+
+    sdk.addLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'related',
+      otherRowId: 'project-row-1',
+    });
+    sdk.deleteLink({
+      tableName: 'Tasks',
+      rowId: 'task-row-1',
+      linkColumnName: 'related',
+      otherRowId: 'project-row-1',
+    });
+    sdk.batchAddLinks({ tableName: 'Tasks', linksData });
+    sdk.batchDeleteLinks({ tableName: 'Tasks', linksData });
+
+    expect(mockAddLink).toHaveBeenCalledWith(
+      'ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', expectedConfig,
+    );
+    expect(mockDeleteLink).toHaveBeenCalledWith(
+      'ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', expectedConfig,
+    );
+    expect(mockAddLinks).toHaveBeenCalledWith('ai_agent', 'Tasks', linksData, expectedConfig);
+    expect(mockDeleteLinks).toHaveBeenCalledWith('ai_agent', 'Tasks', linksData, expectedConfig);
   });
 });
 

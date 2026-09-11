@@ -329,8 +329,10 @@ describe('HTMLPageAPI.updateRow(s)', () => {
     const { api, put } = createApi();
     const rowsData = [{ row_id: 'row-1', Name: 'Jane' }];
     const response = {
-      data: { success: true },
-      rows: [{ row_id: 'row-1', '0000': 'Jane' }],
+      data: {
+        success: true,
+        rows: [{ _id: 'row-1', '0000': 'Jane' }],
+      },
     };
     put.mockReturnValue(response);
 
@@ -343,6 +345,90 @@ describe('HTMLPageAPI.updateRow(s)', () => {
       {
         page_id: 'page-1',
         table_name: 'TableName',
+        rows_data: rowsData,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  });
+
+  it('updateRow sends link-column row ids and returns expanded link values', () => {
+    const { api, put } = createApi();
+    const rowData = {
+      Name: 'Updated task',
+      'Related projects': ['project-row-1', 'project-row-2'],
+    };
+    const updatedRow = {
+      _id: 'task-row-1',
+      Name: 'Updated task',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    };
+    const response = { data: { success: true, row: updatedRow } };
+    put.mockReturnValue(response);
+
+    const result = api.updateRow('page-1', 'Tasks', 'task-row-1', rowData);
+
+    expect(result.data.row).toEqual(updatedRow);
+    expect(put).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
+        row_id: 'task-row-1',
+        row_data: rowData,
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  });
+
+  it('updateRows sends link-column row ids and returns expanded link values', () => {
+    const { api, put } = createApi();
+    const rowsData = [
+      {
+        row_id: 'task-row-1',
+        row: {
+          Name: 'Updated task 1',
+          'Related projects': ['project-row-1', 'project-row-2'],
+        },
+      },
+      {
+        row_id: 'task-row-2',
+        row: {
+          'Related projects': [],
+        },
+      },
+    ];
+    const updatedRows = [
+      {
+        _id: 'task-row-1',
+        Name: 'Updated task 1',
+        'Related projects': [
+          { row_id: 'project-row-1', display_value: 'Project 1' },
+          { row_id: 'project-row-2', display_value: 'Project 2' },
+        ],
+      },
+      {
+        _id: 'task-row-2',
+        'Related projects': [],
+      },
+    ];
+    const response = { data: { success: true, rows: updatedRows } };
+    put.mockReturnValue(response);
+
+    const result = api.updateRows('page-1', 'Tasks', rowsData);
+
+    expect(result.data.rows).toEqual(updatedRows);
+    expect(put).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-rows/batch/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
         rows_data: rowsData,
       },
       {
@@ -417,6 +503,173 @@ describe('HTMLPageAPI.deleteRows(s)', () => {
         page_id: 'ai_agent',
         table_name: 'TableName',
         rows_ids: ['row-1'],
+        preview_table_config: previewTableConfig,
+      },
+    });
+  });
+});
+
+describe('HTMLPageAPI link operations', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('adds a link and returns the updated row', () => {
+    const { api, post } = createApi();
+    const updatedRow = {
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+      ],
+    };
+    const response = { data: { success: true, row: updatedRow } };
+    post.mockReturnValue(response);
+
+    const result = api.addLink(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+    );
+
+    expect(result).toBe(response);
+    expect(result.data.row).toEqual(updatedRow);
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
+        row_id: 'task-row-1',
+        link_column_name: 'Related projects',
+        other_row_id: 'project-row-1',
+      },
+    );
+  });
+
+  it('deletes a link and returns the updated row', () => {
+    const { api, del } = createApi();
+    const updatedRow = { _id: 'task-row-1', 'Related projects': [] };
+    const response = { data: { success: true, row: updatedRow } };
+    del.mockReturnValue(response);
+
+    const result = api.deleteLink(
+      'page-1',
+      'Tasks',
+      'task-row-1',
+      'Related projects',
+      'project-row-1',
+    );
+
+    expect(result).toBe(response);
+    expect(result.data.row).toEqual(updatedRow);
+    expect(del).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/',
+      {
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          page_id: 'page-1',
+          table_name: 'Tasks',
+          row_id: 'task-row-1',
+          link_column_name: 'Related projects',
+          other_row_id: 'project-row-1',
+        },
+      },
+    );
+  });
+
+  it('adds and deletes links in batch and returns the updated rows', () => {
+    const { api, post, del } = createApi();
+    const linksData = [
+      {
+        row_id: 'task-row-1',
+        links: {
+          'Related projects': ['project-row-1', 'project-row-2'],
+        },
+      },
+    ];
+    const addedRows = [{
+      _id: 'task-row-1',
+      'Related projects': [
+        { row_id: 'project-row-1', display_value: 'Project 1' },
+        { row_id: 'project-row-2', display_value: 'Project 2' },
+      ],
+    }];
+    const deletedRows = [{ _id: 'task-row-1', 'Related projects': [] }];
+    const addResponse = { data: { success: true, rows: addedRows } };
+    const deleteResponse = { data: { success: true, rows: deletedRows } };
+    post.mockReturnValue(addResponse);
+    del.mockReturnValue(deleteResponse);
+
+    const addResult = api.addLinks('page-1', 'Tasks', linksData);
+    const deleteResult = api.deleteLinks('page-1', 'Tasks', linksData);
+
+    expect(addResult).toBe(addResponse);
+    expect(addResult.data.rows).toEqual(addedRows);
+    expect(deleteResult).toBe(deleteResponse);
+    expect(deleteResult.data.rows).toEqual(deletedRows);
+    expect(post).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/batch/',
+      {
+        page_id: 'page-1',
+        table_name: 'Tasks',
+        links_data: linksData,
+      },
+    );
+    expect(del).toHaveBeenCalledWith(
+      'https://example.com/api/v2.1/universal-apps/app-uuid/html-page-links/batch/',
+      {
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          page_id: 'page-1',
+          table_name: 'Tasks',
+          links_data: linksData,
+        },
+      },
+    );
+  });
+
+  it('includes preview_table_config in link requests for ai_agent preview', () => {
+    const { api, post, del } = createApi();
+    const previewTableConfig = { table_id: 'table-1', permissions: {} };
+    const linksData = [{ row_id: 'task-row-1', links: { related: ['project-row-1'] } }];
+
+    api.addLink('ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', previewTableConfig);
+    api.deleteLink('ai_agent', 'Tasks', 'task-row-1', 'related', 'project-row-1', previewTableConfig);
+    api.addLinks('ai_agent', 'Tasks', linksData, previewTableConfig);
+    api.deleteLinks('ai_agent', 'Tasks', linksData, previewTableConfig);
+
+    expect(post).toHaveBeenNthCalledWith(1, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'Tasks',
+      row_id: 'task-row-1',
+      link_column_name: 'related',
+      other_row_id: 'project-row-1',
+      preview_table_config: previewTableConfig,
+    });
+    expect(del).toHaveBeenNthCalledWith(1, expect.any(String), {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        page_id: 'ai_agent',
+        table_name: 'Tasks',
+        row_id: 'task-row-1',
+        link_column_name: 'related',
+        other_row_id: 'project-row-1',
+        preview_table_config: previewTableConfig,
+      },
+    });
+    expect(post).toHaveBeenNthCalledWith(2, expect.any(String), {
+      page_id: 'ai_agent',
+      table_name: 'Tasks',
+      links_data: linksData,
+      preview_table_config: previewTableConfig,
+    });
+    expect(del).toHaveBeenNthCalledWith(2, expect.any(String), {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        page_id: 'ai_agent',
+        table_name: 'Tasks',
+        links_data: linksData,
         preview_table_config: previewTableConfig,
       },
     });

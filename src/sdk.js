@@ -129,6 +129,40 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.deleteRows(this.options.pageId, tableName, rowsIds, previewTableConfig);
   }
 
+  addLink({ tableName, rowId, linkColumnName, otherRowId }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.addLink(
+      this.options.pageId,
+      tableName,
+      rowId,
+      linkColumnName,
+      otherRowId,
+      previewTableConfig,
+    );
+  }
+
+  deleteLink({ tableName, rowId, linkColumnName, otherRowId }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.deleteLink(
+      this.options.pageId,
+      tableName,
+      rowId,
+      linkColumnName,
+      otherRowId,
+      previewTableConfig,
+    );
+  }
+
+  batchAddLinks({ tableName, linksData }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.addLinks(this.options.pageId, tableName, linksData, previewTableConfig);
+  }
+
+  batchDeleteLinks({ tableName, linksData }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.deleteLinks(this.options.pageId, tableName, linksData, previewTableConfig);
+  }
+
   uploadFile({ file }) {
     return this.htmlPageAPI.upload(this.options.pageId, file);
   }

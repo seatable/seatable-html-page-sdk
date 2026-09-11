@@ -147,6 +147,42 @@ class HTMLPageAPI {
     return this._sendDelete(url, data);
   }
 
+  addLink(page_id, table_name, row_id, link_column_name, other_row_id, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-links/`;
+    const data = { page_id, table_name, row_id, link_column_name, other_row_id };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this.req.post(url, data);
+  }
+
+  deleteLink(page_id, table_name, row_id, link_column_name, other_row_id, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-links/`;
+    const data = { page_id, table_name, row_id, link_column_name, other_row_id };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this._sendDelete(url, data);
+  }
+
+  addLinks(page_id, table_name, links_data, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-links/batch/`;
+    const data = { page_id, table_name, links_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this.req.post(url, data);
+  }
+
+  deleteLinks(page_id, table_name, links_data, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-links/batch/`;
+    const data = { page_id, table_name, links_data };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this._sendDelete(url, data);
+  }
+
   getUploadLink(page_id, upload_type = 'file') {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-upload-link/`;
     return this.req.get(url, { params: { page_id, upload_type } });

@@ -136,7 +136,16 @@ describe('HTMLPageAPI action operations', () => {
   it('runs and gets a script by its display name', () => {
     const { api, get, post } = createApi();
     const runResponse = { data: { task_id: 42 } };
-    const resultResponse = { data: { state: 'finished' } };
+    const resultResponse = {
+      data: {
+        script: {
+          state: 'finished',
+          success: false,
+          output: 'Script execution failed',
+          return_code: 125,
+        },
+      },
+    };
     post.mockReturnValue(runResponse);
     get.mockReturnValue(resultResponse);
 
@@ -145,6 +154,12 @@ describe('HTMLPageAPI action operations', () => {
 
     expect(runResult).toBe(runResponse);
     expect(result).toBe(resultResponse);
+    expect(result.data.script).toEqual({
+      state: 'finished',
+      success: false,
+      output: 'Script execution failed',
+      return_code: 125,
+    });
     expect(post).toHaveBeenCalledWith(
       'https://example.com/api/v2.1/universal-apps/app-uuid/run-script/Generate%20%2F%20report/',
       { page_id: 'page-1', table_name: undefined, row_id: undefined },

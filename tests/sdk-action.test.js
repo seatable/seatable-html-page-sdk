@@ -142,14 +142,30 @@ describe('action operations', () => {
     };
     const statusResponse = { data: { status: 'SUCCESS' } };
     const runResponse = { data: { task_id: 42 } };
-    const resultResponse = { data: { state: 'finished' } };
+    const resultResponse = {
+      data: {
+        script: {
+          state: 'finished',
+          success: false,
+          output: 'Script execution failed',
+          return_code: 125,
+        },
+      },
+    };
     mockGetMessageStatus.mockReturnValue(statusResponse);
     mockRunScript.mockReturnValue(runResponse);
     mockGetScriptResult.mockReturnValue(resultResponse);
 
     expect(sdk.getMessageStatus({ taskId: 'message-task-1' })).toBe(statusResponse);
     expect(sdk.runScript({ scriptName: 'Generate report' })).toBe(runResponse);
-    expect(sdk.getScriptResult({ scriptName: 'Generate report', taskId: 42 })).toBe(resultResponse);
+    const scriptResult = sdk.getScriptResult({ scriptName: 'Generate report', taskId: 42 });
+    expect(scriptResult).toBe(resultResponse);
+    expect(scriptResult.data.script).toEqual({
+      state: 'finished',
+      success: false,
+      output: 'Script execution failed',
+      return_code: 125,
+    });
 
     expect(mockGetMessageStatus).toHaveBeenCalledWith('message-task-1');
     expect(mockRunScript).toHaveBeenCalledWith('Generate report', 'page-1', undefined, undefined, undefined);

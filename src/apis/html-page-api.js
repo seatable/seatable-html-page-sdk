@@ -183,6 +183,45 @@ class HTMLPageAPI {
     return this._sendDelete(url, data);
   }
 
+  sendNotification(page_id, notification_data, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/notification/`;
+    const data = { ...notification_data, page_id };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this.req.post(url, data);
+  }
+
+  sendEmail(page_id, email_data, preview_table_config) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/email/`;
+    const data = { ...email_data, page_id };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this.req.post(url, data);
+  }
+
+  getMessageStatus(task_id) {
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/dtable-message-status/`;
+    return this.req.get(url, { params: { task_id } });
+  }
+
+  runScript(script_name, page_id, table_name, row_id, preview_table_config) {
+    const encodedScriptName = encodeURIComponent(script_name);
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/run-script/${encodedScriptName}/`;
+    const data = { page_id, table_name, row_id };
+    if (preview_table_config && typeof preview_table_config === 'object') {
+      data.preview_table_config = preview_table_config;
+    }
+    return this.req.post(url, data);
+  }
+
+  getScriptResult(script_name, task_id, page_id) {
+    const encodedScriptName = encodeURIComponent(script_name);
+    const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/run-script/${encodedScriptName}/result/${task_id}/`;
+    return this.req.get(url, { params: { page_id } });
+  }
+
   getUploadLink(page_id, upload_type = 'file') {
     const url = `${this.server}api/v2.1/universal-apps/${this.appUuid}/html-page-upload-link/`;
     return this.req.get(url, { params: { page_id, upload_type } });

@@ -48,7 +48,7 @@ describe('HTMLPageAPI action operations', () => {
       account_name: 'Operations SMTP',
       send_to: ['recipient@example.com'],
       copy_to: ['audit@example.com'],
-      reply_to: ['service@example.com'],
+      reply_to: 'service@example.com',
       subject: 'Order {Order number}',
       html_message: '<p>Hello</p>',
       attachment_column_names: ['Attachment'],
@@ -77,7 +77,7 @@ describe('HTMLPageAPI action operations', () => {
         account_name: 'Operations SMTP',
         send_to: ['recipient@example.com'],
         copy_to: ['audit@example.com'],
-        reply_to: ['service@example.com'],
+        reply_to: 'service@example.com',
         subject: 'Order {Order number}',
         html_message: '<p>Hello</p>',
         attachment_column_names: ['Attachment'],
@@ -170,4 +170,3 @@ describe('HTMLPageAPI action operations', () => {
     );
   });
 });
-

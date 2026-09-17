@@ -57,7 +57,7 @@ describe('action operations', () => {
       accountName: 'Operations SMTP',
       sendTo: ['recipient@example.com'],
       copyTo: ['audit@example.com'],
-      replyTo: ['service@example.com'],
+      replyTo: 'service@example.com',
       subject: 'Order {Order number}',
       htmlMessage: '<p>Hello</p>',
       attachmentColumnNames: ['Attachment'],
@@ -84,7 +84,7 @@ describe('action operations', () => {
         account_name: 'Operations SMTP',
         send_to: ['recipient@example.com'],
         copy_to: ['audit@example.com'],
-        reply_to: ['service@example.com'],
+        reply_to: 'service@example.com',
         subject: 'Order {Order number}',
         message: undefined,
         html_message: '<p>Hello</p>',
@@ -172,4 +172,3 @@ describe('action operations', () => {
     expect(mockGetScriptResult).toHaveBeenCalledWith('Generate report', 42, 'page-1');
   });
 });
-

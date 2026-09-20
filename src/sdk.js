@@ -163,6 +163,65 @@ export class HTMLPageSDK {
     return this.htmlPageAPI.deleteLinks(this.options.pageId, tableName, linksData, previewTableConfig);
   }
 
+  sendNotification({ tableName, rowId, emails, msg }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.sendNotification(
+      this.options.pageId,
+      { table_name: tableName, row_id: rowId, emails, msg },
+      previewTableConfig,
+    );
+  }
+
+  sendEmail({
+    tableName,
+    rowId,
+    accountName,
+    sendTo,
+    copyTo,
+    replyTo,
+    subject,
+    message,
+    htmlMessage,
+    attachmentColumnNames,
+  }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.sendEmail(
+      this.options.pageId,
+      {
+        table_name: tableName,
+        row_id: rowId,
+        account_name: accountName,
+        send_to: sendTo,
+        copy_to: copyTo,
+        reply_to: replyTo,
+        subject,
+        message,
+        html_message: htmlMessage,
+        attachment_column_names: attachmentColumnNames,
+      },
+      previewTableConfig,
+    );
+  }
+
+  getMessageStatus({ taskId }) {
+    return this.htmlPageAPI.getMessageStatus(taskId);
+  }
+
+  runScript({ scriptName, tableName, rowId }) {
+    const previewTableConfig = this._getPreviewTableConfig({ tableName });
+    return this.htmlPageAPI.runScript(
+      scriptName,
+      this.options.pageId,
+      tableName,
+      rowId,
+      previewTableConfig,
+    );
+  }
+
+  getScriptResult({ scriptName, taskId }) {
+    return this.htmlPageAPI.getScriptResult(scriptName, taskId, this.options.pageId);
+  }
+
   uploadFile({ file }) {
     return this.htmlPageAPI.upload(this.options.pageId, file);
   }

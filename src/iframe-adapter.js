@@ -351,7 +351,7 @@ export class IframeAdapter {
         handler(payload);
       } catch (error) {
         // eslint-disable-next-line
-        console.error(`Error in event handler for ${eventType}:`, error);
+        console.error('Error in event handler for %s:', eventType, error);
       }
     });
   }
